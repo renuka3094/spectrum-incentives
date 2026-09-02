@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Spectrum Incentives{% endblock %}</title>
+<script>
+  // Set the theme before first paint so there's no flash of the wrong theme.
+  (function () {
+    try {
+      var saved = localStorage.getItem("spectrum_theme");
+      if (saved) document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% load static %}
+{% load asset_tags %}
+<link rel="stylesheet" href="{% static_v 'agent_portal/css/style.css' %}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<div class="ambient-bg" aria-hidden="true">
+  <span class="orb orb-1"></span>
+  <span class="orb orb-2"></span>
+  <span class="orb orb-3"></span>
+</div>
+
+<div class="splash" id="splash">
+  <div class="splash-mark" id="splash-mark">S</div>
+  <div class="splash-name">SPECTRUM<span>INCENTIVES</span></div>
+</div>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="{% url 'dashboard' %}">
+      <span class="brand-mark">S</span>
+      <span class="brand-name">Spectrum<span class="brand-sub">Incentives</span></span>
+    </a>
+    <div class="topbar-actions">
+      <button class="icon-toggle" id="mute-toggle" type="button" title="Mute sound effects" aria-label="Toggle sound">🔊</button>
+      <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle theme">
+        <span class="theme-toggle-knob" id="theme-toggle-knob">🌙</span>
+      </button>
+      {% block topbar_session %}
+      {% if user.is_authenticated %}
+        {% if user.agent_profile %}
+        <button class="user-chip user-chip-btn" id="open-avatar-picker" type="button" title="Change your avatar">
+          <span id="topbar-avatar">{{ user.agent_profile.avatar_emoji }}</span>
+          <span class="user-chip-name">{{ user.get_full_name|default:user.username }}</span>
+        </button>
+        {% else %}
+        {% comment %}
+          Analyst/Director accounts have no avatar to change — a plain,
+          non-interactive chip rather than a button that opens nothing.
+        {% endcomment %}
+        <span class="user-chip" title="{{ topbar_role_label }}">
+          <span id="topbar-avatar">{{ topbar_fallback_emoji|default:"👤" }}</span>
+          <span class="user-chip-name">{{ user.get_full_name|default:user.username }}</span>
+        </span>
+        {% endif %}
+      <form action="{% url 'logout' %}" method="post" class="inline-form">
+        {% csrf_token %}
+        <button class="btn btn-ghost" type="submit">Log out</button>
+      </form>
+      {% endif %}
+      {% endblock %}
+    </div>
+  </div>
+</header>
+<main class="page">
+  {% block content %}{% endblock %}
+</main>
+
+{% if user.is_authenticated and avatar_choices %}
+<div class="modal-backdrop" id="avatar-picker-backdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3>Pick your avatar</h3>
+      <button class="icon-btn" id="close-avatar-picker" aria-label="Close">✕</button>
+    </div>
+    <div class="avatar-grid">
+      {% for choice in avatar_choices %}
+        <button type="button" class="avatar-choice" data-avatar="{{ choice }}">{{ choice }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="{% static_v 'agent_portal/js/theme.js' %}"></script>
+</body>
+</html>

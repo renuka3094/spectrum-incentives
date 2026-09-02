@@ -1,0 +1,16 @@
+{% for r in rewards %}
+<div class="reward-card {% if r.unlocked %}unlocked{% elif r.is_next %}is-next{% endif %}">
+  <span class="reward-emoji" style="color: var(--{{ r.tier.color }});">{{ r.tier.emoji }}</span>
+  <span class="reward-name">{{ r.tier.name }}</span>
+  <p class="reward-perk">{{ r.tier.perk_description|default:"Perk details coming soon." }}</p>
+  {% if r.unlocked %}
+    <span class="pill pill-success">Unlocked</span>
+  {% elif r.is_next %}
+    <span class="pill pill-locked">Next tier</span>
+  {% else %}
+    <span class="pill pill-locked">Locked</span>
+  {% endif %}
+</div>
+{% empty %}
+<p class="muted">No tiers configured yet.</p>
+{% endfor %}

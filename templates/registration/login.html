@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+{% load asset_tags %}
+{% block title %}Log in · Spectrum Incentives{% endblock %}
+{% comment %}
+  The login page always shows the logged-out topbar, even for a session
+  that's technically still authenticated (e.g. hitting the browser's Back
+  button right after logging in). Django doesn't auto-redirect an
+  authenticated user away from /login/ here — the page still needs to work
+  as a genuine "log in as someone else" screen — so instead of a confusing
+  hybrid state (a login form sitting under a topbar that says you're
+  already logged in), this page's topbar just never reflects session state.
+{% endcomment %}
+{% block topbar_session %}{% endblock %}
+{% block content %}
+{% comment %}
+  Round 17: the decorative hero illustration is gone. It kept getting
+  reintroduced above the card at wide-but-short windows (see style.css
+  history) and pushed the "Log in" button below the fold — exactly the
+  zero-scroll requirement this page has had since Round 11. Decoration
+  isn't worth trading that away, so it's been removed rather than tuned
+  further; the SVG markup lived here in earlier rounds if it's ever wanted
+  back with a layout that can't push content down.
+
+  The role tabs also moved from above the heading to below the "Log in"
+  button, per direct request — they're a role *switcher* (pick a different
+  demo account to log in as), which reads more naturally as a secondary
+  option below the primary action than as the first thing on the page.
+{% endcomment %}
+<div class="auth-wrap">
+
+  <div class="auth-card">
+    <div class="auth-copy" id="auth-copy">
+      <h1 id="auth-heading">Welcome back</h1>
+      <p class="muted" id="auth-subtext">Log in to see this month's incentives and your goal progress.</p>
+    </div>
+
+    {% if form.errors %}
+      <div class="banner banner-error">Your username or password wasn't right — give it another shot.</div>
+    {% endif %}
+
+    <form method="post" class="stack-form" id="login-form">
+      {% csrf_token %}
+      <label for="{{ form.username.id_for_label }}">
+        <span>Username</span>
+        <span class="input-icon-wrap">
+          <span class="input-icon" aria-hidden="true">👤</span>
+          {{ form.username }}
+        </span>
+      </label>
+      <label for="{{ form.password.id_for_label }}">
+        <span>Password</span>
+        <span class="input-icon-wrap">
+          <span class="input-icon" aria-hidden="true">🔒</span>
+          {{ form.password }}
+          <button type="button" class="input-toggle-visibility" id="toggle-password" aria-label="Show password">👁</button>
+        </span>
+        <span class="caps-lock-warning" id="caps-lock-warning" hidden>⚠ Caps Lock is on</span>
+      </label>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-accent btn-block" type="submit">Log in</button>
+    </form>
+
+    <div class="role-switch">
+      <p class="role-switch-label">Logging in as something else?</p>
+      <div class="role-tabs" role="tablist">
+        <button type="button" class="role-tab active" role="tab" aria-selected="true"
+                data-heading="Welcome back"
+                data-subtext="Log in to see this month's incentives and your goal progress."
+                data-demo-user="agent1" data-demo-role="Agent">
+          <span class="role-tab-check" aria-hidden="true">✓</span>
+          <span class="role-tab-icon" aria-hidden="true">🚀</span>
+          <span class="role-tab-label">Agent</span>
+        </button>
+        <button type="button" class="role-tab" role="tab" aria-selected="false"
+                data-heading="Welcome back, Analyst"
+                data-subtext="Log in to see how the current incentive program is performing."
+                data-demo-user="analyst1" data-demo-role="Analyst">
+          <span class="role-tab-check" aria-hidden="true">✓</span>
+          <span class="role-tab-icon" aria-hidden="true">📊</span>
+          <span class="role-tab-label">Analyst</span>
+        </button>
+        <button type="button" class="role-tab" role="tab" aria-selected="false"
+                data-heading="Welcome back, Director"
+                data-subtext="Log in to review pending sales and see how the team's tracking."
+                data-demo-user="director1" data-demo-role="Director">
+          <span class="role-tab-check" aria-hidden="true">✓</span>
+          <span class="role-tab-icon" aria-hidden="true">🧭</span>
+          <span class="role-tab-label">Director</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="muted small" id="auth-copy-demo">Demo login — <span id="auth-demo-role">Agent</span>: <code id="auth-demo-user">agent1</code> / <code>spectrum123</code></p>
+  </div>
+
+  {% if teaser %}
+  <div class="teaser-banner">
+    <p class="eyebrow">🔥 happening right now — {{ teaser.incentive_name }}</p>
+    <p class="teaser-line"><strong>{{ teaser.sales_this_week }}</strong> sales logged by the team this week</p>
+    {% if teaser.leveled_up_count %}
+      <p class="teaser-line"><strong>{{ teaser.leveled_up_count }}</strong> agent{{ teaser.leveled_up_count|pluralize }} already leveled up this month</p>
+    {% endif %}
+    {% if teaser.hot_product %}
+      <p class="teaser-line">Hottest seller right now: <strong>{{ teaser.hot_product }}</strong></p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+<script src="{% static_v 'agent_portal/js/login.js' %}"></script>
+{% endblock %}

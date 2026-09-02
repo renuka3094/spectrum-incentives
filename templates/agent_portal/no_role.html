@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Account not set up{% endblock %}
+{% block content %}
+<div class="empty-state">
+  <h1>This account isn't assigned a role yet</h1>
+  <p class="muted">Ask an admin to add it to the Agent, Incentive Analyst, or Director group in the Django admin.</p>
+  <a class="btn btn-accent" href="/admin/auth/user/">Open admin</a>
+</div>
+{% endblock %}

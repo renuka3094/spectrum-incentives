@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}No agent profile{% endblock %}
+{% block content %}
+<div class="empty-state">
+  <h1>No agent profile linked to this account</h1>
+  <p class="muted">Ask an admin to create an AgentProfile for this user in the Django admin.</p>
+  <a class="btn btn-accent" href="/admin/agent_portal/agentprofile/add/">Open admin</a>
+</div>
+{% endblock %}

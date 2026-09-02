@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% load static %}
+{% load asset_tags %}
+{% block title %}Dashboard · Spectrum Incentives{% endblock %}
+
+{% block content %}
+<div class="dash">
+
+  <div class="dash-head">
+    <div>
+      <p class="eyebrow">{{ agent.region.name|default:"Unassigned region" }} · {{ agent.employee_code }}</p>
+      <h1>Hey {{ agent.display_name }} <span id="greeting-avatar">{{ agent.avatar_emoji }}</span></h1>
+      {% if incentive %}
+        <p class="muted">{{ incentive.name }} · runs {{ incentive.period_start|date:"M j" }}–{{ incentive.period_end|date:"M j" }}</p>
+      {% else %}
+        <p class="muted">No incentive is active right now — check back soon.</p>
+      {% endif %}
+    </div>
+    <div class="dash-head-actions">
+      {% if agent.current_login_streak > 0 %}
+      <div class="streak-chip" title="Consecutive days logged in">
+        <span class="streak-flame">🔥</span>
+        <span>{{ agent.current_login_streak }} day{{ agent.current_login_streak|pluralize }}</span>
+      </div>
+      {% endif %}
+      {% if incentive %}
+      <button class="btn btn-accent" id="open-log-sale">+ Log a sale</button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if incentive and progress %}
+
+  {% if activity_feed %}
+  <div class="ticker" id="activity-ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker-track">
+      {% for item in activity_feed %}<span class="ticker-item">{{ item }}</span>{% endfor %}
+      {% for item in activity_feed %}<span class="ticker-item">{{ item }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+    <button class="tab-btn" data-tab="goals" role="tab" aria-selected="false">
+      Goals
+      {% if goals %}<span class="tab-count">{{ goals|length }}</span>{% endif %}
+    </button>
+    <button class="tab-btn" data-tab="tasks" role="tab" aria-selected="false">
+      Tasks
+      <span class="tab-count" id="tasks-tab-count">{{ tasks_done_count }}/{{ tasks_total_count }}</span>
+    </button>
+    <button class="tab-btn" data-tab="achievements" role="tab" aria-selected="false">
+      Achievements
+      <span class="tab-count" id="ach-tab-count">{{ achievements_earned_count }}/{{ achievements_total_count }}</span>
+    </button>
+    <button class="tab-btn" data-tab="rewards" role="tab" aria-selected="false">Rewards</button>
+    <button class="tab-btn" data-tab="leaderboard" role="tab" aria-selected="false">Leaderboard</button>
+  </nav>
+
+  <div class="tab-panel active" id="panel-overview">
+
+    <section class="card stat-strip" title="Hover a number for what it means">
+      <div class="stat-chip" title="Time left in this incentive">
+        <span class="stat-chip-icon">⏰</span>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value" id="countdown">—</span>
+          <span class="stat-chip-label">time left</span>
+        </div>
+      </div>
+
+      {% if pace %}
+      <div class="stat-chip {% if pace.ahead %}ahead{% else %}behind{% endif %}"
+           title="{% if pace.ahead %}Ahead of{% else %}Behind{% endif %} where you stood at this point in {{ pace.previous_name }}">
+        <span class="stat-chip-icon">{% if pace.ahead %}📈{% else %}📊{% endif %}</span>
+        <div class="stat-chip-body">
+          {% if pace.pct is not None %}
+            <span class="stat-chip-value" id="pace-pct" data-value="{{ pace.pct }}" data-mode="pct">+0%</span>
+          {% else %}
+            <span class="stat-chip-value" id="pace-pct" data-value="{{ pace.current_points }}" data-mode="pts">0 pts</span>
+          {% endif %}
+          <span class="stat-chip-label">vs. pace</span>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="stat-chip" title="Points across every incentive you've ever run">
+        <span class="stat-chip-icon">🏆</span>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value" id="lifetime-points" data-value="{{ lifetime_points }}">0</span>
+          <span class="stat-chip-label">lifetime pts</span>
+        </div>
+      </div>
+
+      <div class="stat-chip" title="Units left to hit every goal this incentive">
+        <span class="stat-chip-icon">📦</span>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value" id="units-remaining" data-value="{{ units_remaining }}">0</span>
+          <span class="stat-chip-label">units left</span>
+        </div>
+      </div>
+
+      <div class="stat-chip" title="Estimated payout on your lifetime points">
+        <span class="stat-chip-icon">💵</span>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value" id="lifetime-cash" data-value="{{ lifetime_cash }}">$0</span>
+          <span class="stat-chip-label">cash earned</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+
+      <div class="card hero-card">
+        <div class="hero-ring">
+          <canvas id="tier-ring" width="176" height="176"></canvas>
+          <div class="hero-ring-label">
+            <span class="hero-points" id="hero-points">{{ progress.points }}</span>
+            <span class="hero-points-unit">pts</span>
+          </div>
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">Current tier</p>
+          <h2 id="current-tier-name"><span class="hero-tier-emoji">{{ progress.current_tier.emoji|default:"🌱" }}</span> {{ progress.current_tier.name|default:"Not yet ranked" }}</h2>
+          {% if progress.is_maxed %}
+            <p class="muted">You've hit the top tier for this incentive. Legendary. 💎</p>
+          {% else %}
+            <p class="muted" id="next-tier-copy">
+              <strong id="points-to-next">{{ progress.points_to_next }}</strong> pts to
+              <strong>{{ progress.next_tier.emoji }} {{ progress.next_tier.name }}</strong>
+            </p>
+          {% endif %}
+          <div class="tier-stepper">
+            {% for row in progress.all_tiers %}
+              <div class="tier-step {% if row.reached %}reached{% endif %}">
+                <span class="tier-step-emoji">{{ row.tier.emoji }}</span>
+                <span class="tier-step-name">{{ row.tier.name }}</span>
+                <span class="tier-step-pts">{{ row.points_required }} pts</span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card ai-card">
+        <div class="ai-card-head">
+          <p class="eyebrow">✨ AI Insights</p>
+          <button class="btn btn-ghost btn-sm" id="refresh-insights">Refresh</button>
+        </div>
+
+        <div id="insights-body">
+          {% include "agent_portal/_insights.html" %}
+        </div>
+      </div>
+
+    </section>
+
+    <section class="card history-card">
+      <p class="eyebrow">Your points over time</p>
+      <canvas id="history-chart" width="720" height="180"></canvas>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="panel-goals">
+    <section class="card goals-card">
+      <div class="ai-card-head">
+        <p class="eyebrow">This incentive's goals</p>
+        <span class="muted small">Target sell-through by product</span>
+      </div>
+      <div class="goal-list" id="goal-list">
+        {% include "agent_portal/_goals.html" %}
+      </div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="panel-tasks">
+    <section class="card tasks-card">
+      <div class="ai-card-head">
+        <p class="eyebrow">✅ Available Tasks</p>
+        <span class="muted small">
+          {{ tasks_done_count }} of {{ tasks_total_count }} done · +{{ bonus_points_current }} bonus pts this period
+        </span>
+      </div>
+      <div class="task-list" id="task-list">
+        {% include "agent_portal/_tasks.html" %}
+      </div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="panel-achievements">
+    <section class="card achievements-card">
+      <div class="ai-card-head">
+        <p class="eyebrow">🏅 Your badge shelf</p>
+        <span class="muted small">{{ achievements_earned_count }} of {{ achievements_total_count }} unlocked</span>
+      </div>
+      <div class="badge-grid" id="badge-grid">
+        {% include "agent_portal/_achievements.html" %}
+      </div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="panel-rewards">
+    <section class="card rewards-card">
+      <div class="ai-card-head">
+        <p class="eyebrow">🎁 Reward Catalog</p>
+        <span class="muted small">What each tier actually pays out</span>
+      </div>
+      <div class="reward-grid" id="reward-grid">
+        {% include "agent_portal/_rewards.html" %}
+      </div>
+    </section>
+  </div>
+
+  <div class="tab-panel" id="panel-leaderboard">
+    <section class="card leaderboard-card">
+      <div class="ai-card-head">
+        <p class="eyebrow">📊 Standings — {{ incentive.name }}</p>
+        <div class="subtabs">
+          <button class="subtab-btn active" data-subtab="region">My region</button>
+          <button class="subtab-btn" data-subtab="company">Company-wide</button>
+        </div>
+      </div>
+      <div class="lb-panel active" id="lb-region">
+        {% include "agent_portal/_leaderboard.html" with rows=leaderboard_region show_region=False %}
+      </div>
+      <div class="lb-panel" id="lb-company">
+        {% include "agent_portal/_leaderboard.html" with rows=leaderboard_company show_region=True %}
+      </div>
+    </section>
+  </div>
+
+  {% else %}
+    <div class="empty-state card">
+      <h2>No active incentive</h2>
+      <p class="muted">Once an incentive analyst publishes this month's campaign, it'll show up here.</p>
+    </div>
+  {% endif %}
+
+</div>
+
+{% if incentive %}
+<div class="modal-backdrop" id="log-sale-backdrop">
+  <div class="modal log-sale-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3>Log a sale</h3>
+      <button class="icon-btn" id="close-log-sale" aria-label="Close">✕</button>
+    </div>
+    <p class="muted small log-sale-note">
+      Sales you log here are reviewed before they count — they'll show as <strong>Pending review</strong>
+      below until an admin approves them. You can log up to <strong id="daily-cap-remaining">{{ daily_remaining }}</strong>
+      more unit{{ daily_remaining|pluralize }} today.
+    </p>
+    <form id="log-sale-form">
+      <label>
+        <span>Product / service</span>
+        <select name="product_id" id="sale-product">
+          {% for p in products %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.category.name }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Quantity</span>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" id="qty-minus">–</button>
+          <input type="number" name="quantity" id="sale-qty" value="1" min="1" max="50">
+          <button type="button" class="stepper-btn" id="qty-plus">+</button>
+        </div>
+      </label>
+      <button class="btn btn-accent btn-block" type="submit">Log sale</button>
+      <p class="muted small form-msg" id="log-sale-msg"></p>
+    </form>
+
+    <div class="recent-sales-block">
+      <p class="eyebrow">Your recent submissions</p>
+      <div class="recent-sales" id="recent-sales-list">
+        {% include "agent_portal/_recent_sales.html" %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="share-card-backdrop">
+  <div class="modal share-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3>Share your win</h3>
+      <button class="icon-btn" id="close-share-card" aria-label="Close">✕</button>
+    </div>
+    <canvas id="share-canvas" width="600" height="400"></canvas>
+    <a class="btn btn-accent btn-block" id="download-share-card" download="spectrum-badge.png">Download image</a>
+  </div>
+</div>
+
+<div class="toast" id="level-up-toast">
+  <span id="level-up-text"></span>
+</div>
+
+<div class="modal-backdrop" id="mystery-box-backdrop">
+  <div class="modal mystery-modal" role="dialog" aria-modal="true">
+    <div class="mystery-stage">
+      <span class="mystery-emoji" id="mystery-emoji">🎁</span>
+      <div class="mystery-reveal" id="mystery-reveal" hidden>
+        <p class="eyebrow">Surprise bonus!</p>
+        <h3 id="mystery-title">+0 pts</h3>
+        <p class="muted small" id="mystery-sub"></p>
+      </div>
+    </div>
+    <button class="btn btn-accent btn-block" id="close-mystery-box">Nice!</button>
+  </div>
+</div>
+{% endif %}
+
+<script id="dashboard-data" type="application/json">
+{
+  "progress": {
+    "points": {{ progress.points|default:0 }},
+    "pct_to_next": {{ progress.pct_to_next|default:0 }},
+    "is_maxed": {{ progress.is_maxed|yesno:"true,false" }}
+  },
+  "history": {{ history_json|safe }},
+  "periodEnd": {{ period_end_json|safe }},
+  "agentName": {{ agent_name_json|safe }},
+  "agentAvatar": {{ agent_avatar_json|safe }},
+  "newAchievements": {{ new_achievements_json|safe }},
+  "newTasks": {{ new_tasks_json|safe }},
+  "newMysteryBoxes": {{ new_mystery_boxes_json|safe }}
+}
+</script>
+<script src="{% static_v 'agent_portal/js/dashboard.js' %}"></script>
+{% endblock %}

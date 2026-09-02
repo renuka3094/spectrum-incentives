@@ -1,0 +1,14 @@
+{% for row in rows %}
+<div class="lb-row {% if row.is_me %}is-me{% endif %}">
+  <span class="lb-rank">
+    {% if row.rank == 1 %}🥇{% elif row.rank == 2 %}🥈{% elif row.rank == 3 %}🥉{% else %}#{{ row.rank }}{% endif %}
+  </span>
+  <span class="lb-avatar">{{ row.avatar }}</span>
+  <span class="lb-name">{{ row.name }}{% if row.is_me %} <span class="pill pill-success">You</span>{% endif %}</span>
+  {% if show_region %}<span class="lb-region muted small">{{ row.region }}</span>{% endif %}
+  <span class="lb-tier">{% if row.tier %}{{ row.tier.emoji }} {{ row.tier.name }}{% else %}—{% endif %}</span>
+  <span class="lb-points" data-value="{{ row.points }}">0 pts</span>
+</div>
+{% empty %}
+<p class="muted">No agents to rank yet.</p>
+{% endfor %}

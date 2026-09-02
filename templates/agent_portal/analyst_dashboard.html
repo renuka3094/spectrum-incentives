@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Analyst · Spectrum Incentives{% endblock %}
+{% block content %}
+<div class="dash dash-compact">
+
+  <div class="dash-head">
+    <div>
+      <p class="eyebrow">Incentive Analyst</p>
+      <h1>Program overview</h1>
+      {% if overview.incentive %}
+        <p class="muted">{{ overview.incentive.name }} · runs {{ overview.incentive.period_start|date:"M j" }}–{{ overview.incentive.period_end|date:"M j" }}</p>
+      {% else %}
+        <p class="muted">No incentive is active right now.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="card stat-strip">
+    <div class="stat-chip" title="Everyone logging sales right now">
+      <span class="stat-chip-icon">🧑‍💼</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.agent_count }}</span>
+        <span class="stat-chip-label">agents</span>
+      </div>
+    </div>
+    <div class="stat-chip" title="Approved points across the whole team this period">
+      <span class="stat-chip-icon">🏆</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.total_points }}</span>
+        <span class="stat-chip-label">points this period</span>
+      </div>
+    </div>
+    <div class="stat-chip" title="Approved units across the whole team this period">
+      <span class="stat-chip-icon">📦</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.total_units }}</span>
+        <span class="stat-chip-label">units sold</span>
+      </div>
+    </div>
+    <div class="stat-chip" title="Self-logged sales still waiting on a Director's review">
+      <span class="stat-chip-icon">⏳</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.pending_count }}</span>
+        <span class="stat-chip-label">pending review</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <p class="eyebrow">📍 Points by region</p>
+      {% for r in overview.region_rows %}
+        <div class="mini-row">
+          <span>{{ r.name }}</span>
+          <span class="muted small">{{ r.points }} pts</span>
+        </div>
+      {% empty %}
+        <p class="muted">No approved sales yet this period.</p>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">🔥 Top seller this period</p>
+      {% if overview.top_product %}
+        <h2>{{ overview.top_product }}</h2>
+        <p class="muted">{{ overview.top_product_units }} unit{{ overview.top_product_units|pluralize }} sold across the team.</p>
+      {% else %}
+        <p class="muted">No approved sales yet this period.</p>
+      {% endif %}
+      <p class="muted small" style="margin-top: 16px;">
+        Building and publishing new incentives is a phase 2 feature. For now, incentives, tier
+        thresholds and product goals are managed directly in
+        <a href="/admin/agent_portal/incentive/" style="color: var(--accent);">the Django admin</a>.
+      </p>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

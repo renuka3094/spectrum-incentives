@@ -1,0 +1,18 @@
+{% for t in tasks %}
+<div class="task-card {% if t.done %}done{% endif %}" data-key="{{ t.key }}">
+  <span class="task-emoji">{{ t.emoji }}</span>
+  <div class="task-body">
+    <span class="task-name">{{ t.name }}</span>
+    <span class="task-desc muted small">{{ t.description }}</span>
+  </div>
+  <div class="task-side">
+    {% if t.done %}
+      <span class="pill pill-success">+{{ t.points }} pts ✓</span>
+    {% else %}
+      <span class="pill pill-locked">+{{ t.points }} pts</span>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<p class="muted">No active incentive — quests will appear once one is live.</p>
+{% endfor %}

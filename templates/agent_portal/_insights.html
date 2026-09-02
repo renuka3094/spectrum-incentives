@@ -1,0 +1,36 @@
+<div id="insights-content">
+  {% if tip %}
+  <div class="insight-row">
+    <span class="insight-icon">🎯</span>
+    <p><strong>Fastest path:</strong> sell <strong>{{ tip.units_needed }}</strong> more
+      {{ tip.product.name }}{{ tip.units_needed|pluralize }} to reach your next tier.</p>
+  </div>
+  {% endif %}
+
+  {% if momentum %}
+  <div class="insight-row">
+    <span class="insight-icon">
+      {% if momentum.trend == "up" %}📈{% elif momentum.trend == "down" %}📉{% else %}➖{% endif %}
+    </span>
+    <p>
+      <strong>This week:</strong> {{ momentum.this_week }} pts
+      {% if momentum.delta_pct is not None %}
+        ({% if momentum.delta_pct >= 0 %}+{% endif %}{{ momentum.delta_pct }}% vs last week)
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+  <p class="eyebrow insight-subhead">Nearby, people are buying…</p>
+  {% for t in trending %}
+  <div class="insight-row trend-row">
+    <span class="insight-icon">🔥</span>
+    <p>
+      <strong>{{ t.product_name }}</strong> — {{ t.region_agents }} agent{{ t.region_agents|pluralize }} near you sold
+      {{ t.region_units }} this period{% if t.my_units == 0 %}, you haven't logged one yet{% else %} (you: {{ t.my_units }}){% endif %}.
+    </p>
+  </div>
+  {% empty %}
+  <p class="muted small">Not enough regional activity yet to spot a trend.</p>
+  {% endfor %}
+</div>

@@ -1,0 +1,19 @@
+{% for a in achievements %}
+<div class="badge-card {% if a.earned %}unlocked{% else %}locked{% endif %}" data-key="{{ a.key }}">
+  <span class="badge-emoji">{{ a.emoji }}</span>
+  <span class="badge-name">{{ a.name }}</span>
+  <span class="badge-desc muted small">{{ a.description }}</span>
+  {% if a.earned %}
+    <span class="pill pill-success">Unlocked{% if a.earned_at %} · {{ a.earned_at|date:"M j" }}{% endif %}</span>
+  {% else %}
+    <span class="pill pill-locked">Locked</span>
+  {% endif %}
+  <button
+    class="btn btn-ghost btn-sm badge-share"
+    type="button"
+    data-name="{{ a.name }}"
+    data-emoji="{{ a.emoji }}"
+    data-earned="{{ a.earned_at|date:'M j, Y' }}"
+  >🔗 Share</button>
+</div>
+{% endfor %}

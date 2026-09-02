@@ -1,0 +1,18 @@
+{% for g in goals %}
+<div class="goal-item {% if g.complete %}complete{% endif %}" data-product="{{ g.product.name }}">
+  <div class="goal-item-top">
+    <span class="goal-name">{{ g.product.name }}</span>
+    <span class="goal-count"><span class="goal-sold">{{ g.sold }}</span>/{{ g.target }}</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" style="width: {{ g.pct }}%"></div>
+  </div>
+  {% if g.complete %}
+    <span class="pill pill-success">Goal hit ✓</span>
+  {% else %}
+    <span class="muted small">{{ g.remaining }} more to hit target · {{ g.points_per_unit }} pts each</span>
+  {% endif %}
+</div>
+{% empty %}
+<p class="muted">No product goals set for this incentive yet.</p>
+{% endfor %}

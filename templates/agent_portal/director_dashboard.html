@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Director · Spectrum Incentives{% endblock %}
+{% block content %}
+<div class="dash dash-compact">
+
+  <div class="dash-head">
+    <div>
+      <p class="eyebrow">Director</p>
+      <h1>Team overview</h1>
+      {% if overview.incentive %}
+        <p class="muted">{{ overview.incentive.name }} · runs {{ overview.incentive.period_start|date:"M j" }}–{{ overview.incentive.period_end|date:"M j" }}</p>
+      {% else %}
+        <p class="muted">No incentive is active right now.</p>
+      {% endif %}
+    </div>
+    <div class="dash-head-actions">
+      <a class="btn btn-accent" href="/admin/agent_portal/sale/?status__exact=pending">Review pending sales</a>
+    </div>
+  </div>
+
+  <section class="card stat-strip">
+    <div class="stat-chip" title="Everyone on the team">
+      <span class="stat-chip-icon">🧑‍💼</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.agent_count }}</span>
+        <span class="stat-chip-label">agents</span>
+      </div>
+    </div>
+    <div class="stat-chip" title="Approved points across the whole team this period">
+      <span class="stat-chip-icon">🏆</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.total_points }}</span>
+        <span class="stat-chip-label">points this period</span>
+      </div>
+    </div>
+    <div class="stat-chip {% if overview.pending_count %}behind{% endif %}" title="Self-logged sales waiting on your approval">
+      <span class="stat-chip-icon">⏳</span>
+      <div class="stat-chip-body">
+        <span class="stat-chip-value">{{ overview.pending_count }}</span>
+        <span class="stat-chip-label">awaiting your review</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <div class="ai-card-head">
+        <p class="eyebrow">⏳ Awaiting review</p>
+        <a class="btn btn-ghost btn-sm" href="/admin/agent_portal/sale/?status__exact=pending">Open queue</a>
+      </div>
+      {% for s in overview.pending_rows %}
+        <div class="mini-row">
+          <span>{{ s.avatar }} {{ s.agent }} — {{ s.quantity }}x {{ s.product }}</span>
+          <span class="muted small">{{ s.sold_at|date:"M j, g:ia" }}</span>
+        </div>
+      {% empty %}
+        <p class="muted">Nothing waiting on you right now.</p>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">🏅 Top performers this period</p>
+      {% for a in overview.top_agents %}
+        <div class="mini-row">
+          <span>{{ a.avatar }} {{ a.name }}</span>
+          <span class="muted small">{{ a.points }} pts</span>
+        </div>
+      {% empty %}
+        <p class="muted">No approved sales yet this period.</p>
+      {% endfor %}
+      <p class="muted small" style="margin-top: 16px;">
+        Approving/rejecting still happens in the Sale admin's bulk actions — this page just
+        surfaces what's waiting so you don't have to go looking for it.
+      </p>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
