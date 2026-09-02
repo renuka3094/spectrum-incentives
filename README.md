@@ -164,21 +164,29 @@ A Django app needs a real backend host — it can't be a static link. **Render**
 1. **Push this project to a GitHub repo** (private is fine — you can invite your manager as a collaborator, or just share the deployed URL).
 2. **Create a free account at [render.com](https://render.com)** and choose "New → Web Service", connecting your GitHub repo.
 3. Render auto-detects Python. Set:
-   - **Build command:** `pip install -r requirements.txt && python manage.py collectstatic --noinput`
+   - **Build command:** `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py seed_data && python manage.py ensure_superuser`
    - **Start command:** `gunicorn spectrum.wsgi`
+
+   The build command chains on `migrate`, `seed_data`, and a custom `ensure_superuser` command (see
+   `agent_portal/management/commands/ensure_superuser.py`) so the database is fully set up on every
+   deploy with no manual step afterward — this matters because **Render's free tier puts the Shell
+   tab behind a paid plan**, so you can't just SSH in and run these by hand. All three are safe to
+   run on every single deploy: `migrate` and `seed_data` are already idempotent (re-running them is a
+   no-op once applied/seeded), and `ensure_superuser` only creates an admin account if one with that
+   exact username doesn't already exist yet — it never errors on a second deploy.
 4. Under **Environment**, add these variables:
    - `DJANGO_SECRET_KEY` → any long random string (Render can generate one)
    - `DJANGO_DEBUG` → `False`
    - `DJANGO_ALLOWED_HOSTS` → `yourapp.onrender.com` (Render shows you the exact hostname it assigns)
    - `PYTHON_VERSION` → `3.11.15`
-5. Deploy. Render will run the build command, then start the app.
-6. Once it's live, SSH in via Render's shell (or add a one-time build-command step) to run:
-   ```bash
-   python manage.py migrate
-   python manage.py seed_data
-   python manage.py createsuperuser
-   ```
-7. Share the `https://yourapp.onrender.com` link with your manager.
+   - `DJANGO_SUPERUSER_USERNAME` → whatever you want your own admin login to be, e.g. `admin`
+   - `DJANGO_SUPERUSER_PASSWORD` → a password for that admin login
+   - `DJANGO_SUPERUSER_EMAIL` → optional, can be left blank
+5. Deploy. Render will run the build command (installing dependencies, collecting static files,
+   migrating, seeding demo data, and creating your admin login, all in one go), then start the app.
+6. Share the `https://yourapp.onrender.com` link with your manager. Log in with any seeded demo
+   account (see "Three login types" above), or with the admin username/password you set in step 4
+   to reach `/admin/`.
 
 **Heads-up:** this ships with SQLite for simplicity. Render's free web services use an ephemeral filesystem, so the database resets on redeploys/restarts — perfectly fine for a demo, but if you want data to persist you'd add Render's free PostgreSQL instance and point `DATABASES` at it (ask and I'll wire that up). **PythonAnywhere** is a solid alternative if you'd rather not use GitHub — it lets you upload the folder directly and gives you a persistent `yourname.pythonanywhere.com` URL, but its free tier requires more manual WSGI configuration.
 
