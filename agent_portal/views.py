@@ -36,16 +36,56 @@ class SpectrumLoginView(LoginView):
     'here's what's happening' teaser so the login screen sells the incentive
     before anyone's even signed in, and — since one login form now serves
     three account types (Agent / Incentive Analyst / Director, picked via
-    tabs that are purely presentational, see login.html) — routes a
-    successful login to whichever portal the *account itself* actually
-    belongs to, not whichever tab was showing when the form was submitted."""
+    the role tabs in login.html) — enforces that the tab someone picked
+    actually matches the account they're logging into. Earlier this was
+    deliberately the opposite (the tab was purely cosmetic and a login just
+    landed on whichever portal the account really belonged to); reported
+    back as confusing in practice — picking "Agent" and typing in Director
+    credentials silently opened the Director portal — so a mismatch is now
+    rejected outright rather than silently routed around."""
 
     template_name = "registration/login.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["teaser"] = insights.public_teaser()
+        # Which role tab should render as active: whatever was actually
+        # submitted (so a role-mismatch error reloads with the same tab
+        # still selected, instead of silently resetting to Agent), or Agent
+        # by default on a plain GET.
+        context["selected_role"] = self.request.POST.get("selected_role") or roles.ROLE_AGENT
         return context
+
+    def form_valid(self, form):
+        """Runs after the username/password themselves check out (that part
+        is still entirely Django's own AuthenticationForm.clean()) but
+        before the session is actually established — so a role mismatch
+        never logs the account in at all, not even briefly. `selected_role`
+        comes from the hidden field login.js keeps in sync with whichever
+        role tab is active; a missing/unrecognized value is treated as
+        "agent" (the tab that's active by default), never as a wildcard
+        that skips the check."""
+        user = form.get_user()
+        selected_role = self.request.POST.get("selected_role") or roles.ROLE_AGENT
+        actual_role = roles.get_user_role(user)
+
+        if selected_role != actual_role:
+            actual_label = roles.ROLE_LABELS.get(actual_role, "no role assigned yet")
+            actual_tab_label = roles.ROLE_TAB_LABELS.get(actual_role)
+            if actual_role is None or not actual_tab_label:
+                form.add_error(
+                    None,
+                    f"This account has {actual_label} — it can't log in from here yet.",
+                )
+            else:
+                form.add_error(
+                    None,
+                    f"Those are {actual_label} credentials — switch to the {actual_tab_label} tab "
+                    f"below to log in with them.",
+                )
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
 
     def get_success_url(self):
         role = roles.get_user_role(self.request.user)
@@ -111,6 +151,10 @@ def dashboard(request):
     context["daily_log_cap"] = insights.DAILY_LOG_QUANTITY_CAP
     context["daily_logged"] = insights.daily_logged_quantity(agent)
     context["daily_remaining"] = max(0, insights.DAILY_LOG_QUANTITY_CAP - context["daily_logged"])
+    # Per-product points, for the Log a Sale modal's live point-impact
+    # preview (dashboard.js reads this client-side rather than a fresh
+    # request on every keystroke) — see insights.product_points_map().
+    context["product_points_json"] = json.dumps(insights.product_points_map(incentive))
 
     history = (
         Sale.objects.approved()
@@ -205,6 +249,86 @@ def api_log_sale(request):
             "daily_logged": daily_logged,
             "daily_remaining": max(0, insights.DAILY_LOG_QUANTITY_CAP - daily_logged),
             "recent_sales_html": recent_sales_html,
+        }
+    )
+
+
+@login_required
+@require_POST
+def api_cancel_sale(request, sale_id):
+    """Lets an agent retract their own still-pending submission — the
+    inverse of api_log_sale, for a sale nobody has reviewed yet. Only ever
+    touches a sale that both belongs to the requesting agent AND is still
+    'pending'; once a Director has approved or rejected it (see
+    api_review_sale below), the review already happened and canceling no
+    longer makes sense, so that's quietly refused rather than erroring
+    loudly. Deletes the row outright rather than adding a fourth Sale.status
+    value — a canceled submission was never real activity to keep a record
+    of, and deleting it also frees up the daily cap it had been counted
+    against."""
+    agent = _get_agent_or_none(request)
+    if agent is None:
+        return HttpResponseBadRequest("No agent profile.")
+
+    sale = Sale.objects.filter(id=sale_id, agent=agent, status=Sale.STATUS_PENDING).first()
+    if sale is None:
+        return JsonResponse({"error": "That submission can't be canceled anymore."}, status=400)
+
+    sale.delete()
+
+    daily_logged = insights.daily_logged_quantity(agent)
+    recent_sales_html = render_to_string(
+        "agent_portal/_recent_sales.html",
+        {"recent_sales": insights.recent_sales_for_agent(agent)},
+        request=request,
+    )
+    return JsonResponse(
+        {
+            "ok": True,
+            "daily_logged": daily_logged,
+            "daily_remaining": max(0, insights.DAILY_LOG_QUANTITY_CAP - daily_logged),
+            "recent_sales_html": recent_sales_html,
+        }
+    )
+
+
+@roles.role_required(roles.ROLE_DIRECTOR)
+@require_POST
+def api_review_sale(request, sale_id):
+    """The real in-app replacement for the Sale admin's bulk actions — lets
+    a Director approve or reject one pending sale without leaving the app.
+    Under the hood it's the exact same operation the admin actions perform
+    (flip Sale.status; see SaleQuerySet.approved() for why status is the
+    single gate everything else — points, tiers, goals, badges, quests —
+    checks before counting a sale) — just reachable from a real screen now.
+    The admin's bulk actions still work too, for anything beyond the top 8
+    pending sales shown on the Director portal."""
+    try:
+        payload = json.loads(request.body or "{}")
+        action = payload.get("action")
+    except (ValueError, TypeError):
+        return HttpResponseBadRequest("Malformed request.")
+
+    if action not in ("approve", "reject"):
+        return HttpResponseBadRequest("Unknown action.")
+
+    sale = Sale.objects.filter(id=sale_id, status=Sale.STATUS_PENDING).first()
+    if sale is None:
+        return JsonResponse(
+            {"error": "That sale has already been reviewed (or doesn't exist anymore)."}, status=400
+        )
+
+    sale.status = Sale.STATUS_APPROVED if action == "approve" else Sale.STATUS_REJECTED
+    sale.save(update_fields=["status"])
+
+    overview = insights.director_overview()
+    return JsonResponse(
+        {
+            "ok": True,
+            "sale_id": sale.id,
+            "new_status": sale.status,
+            "pending_count": overview["pending_count"],
+            "total_points": overview["total_points"],
         }
     )
 

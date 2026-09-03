@@ -240,15 +240,15 @@
 
 {% if incentive %}
 <div class="modal-backdrop" id="log-sale-backdrop">
-  <div class="modal log-sale-modal" role="dialog" aria-modal="true">
+  <div class="modal log-sale-modal" role="dialog" aria-modal="true" aria-labelledby="log-sale-title">
     <div class="modal-head">
-      <h3>Log a sale</h3>
+      <h3 id="log-sale-title">Log a sale</h3>
       <button class="icon-btn" id="close-log-sale" aria-label="Close">✕</button>
     </div>
     <p class="muted small log-sale-note">
       Sales you log here are reviewed before they count — they'll show as <strong>Pending review</strong>
-      below until an admin approves them. You can log up to <strong id="daily-cap-remaining">{{ daily_remaining }}</strong>
-      more unit{{ daily_remaining|pluralize }} today.
+      below until a director approves them (usually within a few hours). You can log up to
+      <strong id="daily-cap-remaining">{{ daily_remaining }}</strong> more unit{{ daily_remaining|pluralize }} today.
     </p>
     <form id="log-sale-form">
       <label>
@@ -262,13 +262,20 @@
       <label>
         <span>Quantity</span>
         <div class="stepper">
-          <button type="button" class="stepper-btn" id="qty-minus">–</button>
-          <input type="number" name="quantity" id="sale-qty" value="1" min="1" max="50">
-          <button type="button" class="stepper-btn" id="qty-plus">+</button>
+          <button type="button" class="stepper-btn" id="qty-minus" aria-label="Decrease quantity">–</button>
+          <input type="number" name="quantity" id="sale-qty" value="1" min="1" max="50" aria-label="Quantity">
+          <button type="button" class="stepper-btn" id="qty-plus" aria-label="Increase quantity">+</button>
         </div>
       </label>
-      <button class="btn btn-accent btn-block" type="submit">Log sale</button>
-      <p class="muted small form-msg" id="log-sale-msg"></p>
+
+      <div class="sale-preview" id="sale-preview" aria-live="polite">
+        <span class="sale-preview-points" id="sale-preview-points">+0 pts</span>
+        <span class="sale-preview-note" id="sale-preview-note"></span>
+      </div>
+      <p class="cap-warning" id="cap-warning" role="alert" hidden></p>
+
+      <button class="btn btn-accent btn-block" type="submit" id="log-sale-submit">Log sale</button>
+      <p class="muted small form-msg" id="log-sale-msg" role="status" aria-live="polite"></p>
     </form>
 
     <div class="recent-sales-block">
@@ -281,9 +288,9 @@
 </div>
 
 <div class="modal-backdrop" id="share-card-backdrop">
-  <div class="modal share-modal" role="dialog" aria-modal="true">
+  <div class="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="share-card-title">
     <div class="modal-head">
-      <h3>Share your win</h3>
+      <h3 id="share-card-title">Share your win</h3>
       <button class="icon-btn" id="close-share-card" aria-label="Close">✕</button>
     </div>
     <canvas id="share-canvas" width="600" height="400"></canvas>
@@ -296,7 +303,7 @@
 </div>
 
 <div class="modal-backdrop" id="mystery-box-backdrop">
-  <div class="modal mystery-modal" role="dialog" aria-modal="true">
+  <div class="modal mystery-modal" role="dialog" aria-modal="true" aria-label="Surprise bonus">
     <div class="mystery-stage">
       <span class="mystery-emoji" id="mystery-emoji">🎁</span>
       <div class="mystery-reveal" id="mystery-reveal" hidden>
@@ -315,8 +322,13 @@
   "progress": {
     "points": {{ progress.points|default:0 }},
     "pct_to_next": {{ progress.pct_to_next|default:0 }},
-    "is_maxed": {{ progress.is_maxed|yesno:"true,false" }}
+    "is_maxed": {{ progress.is_maxed|yesno:"true,false" }},
+    "pointsToNext": {{ progress.points_to_next|default:0 }},
+    "nextTierName": {% if progress.next_tier %}"{{ progress.next_tier.name|escapejs }}"{% else %}null{% endif %},
+    "nextTierEmoji": {% if progress.next_tier %}"{{ progress.next_tier.emoji|escapejs }}"{% else %}null{% endif %}
   },
+  "productPoints": {{ product_points_json|safe }},
+  "dailyCap": {{ daily_remaining|default:0 }},
   "history": {{ history_json|safe }},
   "periodEnd": {{ period_end_json|safe }},
   "agentName": {{ agent_name_json|safe }},

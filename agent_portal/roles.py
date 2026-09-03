@@ -4,10 +4,18 @@ Which "portal" a logged-in user lands on.
 Phase 1 only really built out the Agent experience (see AgentProfile). This
 adds Analyst and Director as real, distinct logins — each with its own
 lightweight landing page — without pretending they're full features yet.
-Role is intentionally NOT something the login page's tab selector decides;
-it's determined here, from the actual account, so a mismatched tab click
-(e.g. an Agent account clicking the "Director" tab) can't fake its way into
-a portal it doesn't belong to. It just lands the person on their real one.
+Role is always determined here, from the actual account (`get_user_role`) —
+`role_required` still bounces a logged-in user away from a portal that isn't
+theirs, same as always. The login page's role tabs used to be purely
+cosmetic on top of that (a mismatched tab click would just quietly land on
+the account's real portal); as of the login-page fix in
+`views.SpectrumLoginView.form_valid`, the tab selected at submit time is now
+also enforced *at login* — picking "Agent" and entering Director credentials
+is rejected there with an explicit error, rather than silently succeeding
+into the Director portal. `role_required` here is the deeper, always-on
+guard for a session that's already authenticated (a stale bookmark, a
+manually-typed URL); the login-time check is a separate, earlier guard
+against confusing tab/credential mismatches at the point of sign-in.
 
 Analyst/Director aren't separate models — there's no per-user data to hang
 off them yet (unlike AgentProfile, which carries region/avatar/streak/etc.),
@@ -29,6 +37,18 @@ GROUP_DIRECTOR = "Director"
 ROLE_LABELS = {
     ROLE_AGENT: "Field Agent",
     ROLE_ANALYST: "Incentive Analyst",
+    ROLE_DIRECTOR: "Director",
+}
+
+# Shorter labels matching the exact text printed on the login page's role
+# tabs ("Agent" / "Analyst" / "Director" — see login.html's `.role-tab-label`
+# spans). Used only for the login-page role-mismatch error message, so
+# "switch to the __ tab" names the tab the way it actually reads on screen
+# rather than the fuller ROLE_LABELS wording used elsewhere (e.g. the
+# topbar's role badge).
+ROLE_TAB_LABELS = {
+    ROLE_AGENT: "Agent",
+    ROLE_ANALYST: "Analyst",
     ROLE_DIRECTOR: "Director",
 }
 

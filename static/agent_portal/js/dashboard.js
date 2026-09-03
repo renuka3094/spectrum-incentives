@@ -411,6 +411,88 @@
     });
   }
 
+  // ---------- modal accessibility: focus trap + Escape to close ----------
+  // Applies to every .modal-backdrop on the page (log-sale, share card,
+  // mystery box) rather than just this one, so opening any of them keeps
+  // keyboard/screen-reader focus inside the dialog, Tab wraps instead of
+  // escaping to the page behind it, Escape closes it, and focus returns to
+  // whatever triggered it on close — standard modal behavior that was
+  // missing entirely before.
+
+  (function () {
+    const backdrops = document.querySelectorAll(".modal-backdrop");
+    if (!backdrops.length) return;
+
+    function getFocusable(container) {
+      return Array.from(
+        container.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((elm) => elm.offsetParent !== null);
+    }
+
+    const lastFocusedByBackdrop = new WeakMap();
+
+    backdrops.forEach((bd) => {
+      const modal = bd.querySelector(".modal");
+      if (!modal) return;
+      modal.setAttribute("tabindex", "-1");
+
+      const observer = new MutationObserver(() => {
+        if (bd.classList.contains("open")) {
+          lastFocusedByBackdrop.set(bd, document.activeElement);
+          const focusables = getFocusable(modal);
+          (focusables[0] || modal).focus({ preventScroll: true });
+        } else {
+          const toRestore = lastFocusedByBackdrop.get(bd);
+          if (toRestore && document.body.contains(toRestore)) {
+            toRestore.focus({ preventScroll: true });
+          }
+          lastFocusedByBackdrop.delete(bd);
+        }
+      });
+      observer.observe(bd, { attributes: true, attributeFilter: ["class"] });
+    });
+
+    // Bound to `document`, not the individual backdrop — content inside an
+    // open modal (like the recent-submissions list) can get its innerHTML
+    // swapped out from under a focused button, which the browser resolves
+    // by quietly moving focus to <body>. A listener scoped to the backdrop
+    // would go deaf at that exact moment since <body> isn't inside it;
+    // listening on `document` and looking up whichever backdrop is
+    // currently open keeps Escape/Tab working regardless of where focus
+    // actually landed.
+    document.addEventListener("keydown", (e) => {
+      const openBackdrop = document.querySelector(".modal-backdrop.open");
+      if (!openBackdrop) return;
+      const modal = openBackdrop.querySelector(".modal");
+      if (!modal) return;
+
+      if (e.key === "Escape") {
+        openBackdrop.classList.remove("open");
+        return;
+      }
+
+      if (e.key !== "Tab") return;
+      const focusables = getFocusable(modal);
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (!modal.contains(document.activeElement)) {
+        // focus drifted outside the modal (e.g. onto <body> after a DOM
+        // swap) — pull it back in rather than letting Tab continue from body
+        e.preventDefault();
+        first.focus();
+      }
+    });
+  })();
+
   // quantity stepper
   const qtyInput = el("sale-qty");
   const qtyMinus = el("qty-minus");
@@ -421,6 +503,73 @@
   if (qtyPlus) qtyPlus.addEventListener("click", () => {
     qtyInput.value = Math.min(50, parseInt(qtyInput.value || "1", 10) + 1);
   });
+
+  // ---------- log-sale live point-impact preview ----------
+  // As the agent picks a product/quantity, show what it would be worth and
+  // how close that gets them to their next tier — *before* they submit.
+  // Nothing here is authoritative (the sale still goes in "pending" and the
+  // real math happens server-side on approval, same as ever) — it's purely
+  // a preview so the decision of what to log feels informed instead of a
+  // guess. Also flags up front when a quantity would blow the daily cap,
+  // since api_log_sale rejects the whole request rather than partially
+  // logging it.
+
+  const saleProductSelect = el("sale-product");
+  const salePreviewPoints = el("sale-preview-points");
+  const salePreviewNote = el("sale-preview-note");
+  const capWarning = el("cap-warning");
+  const logSaleSubmit = el("log-sale-submit");
+
+  function currentDailyRemaining() {
+    const capEl = el("daily-cap-remaining");
+    if (!capEl) return state.dailyCap || 0;
+    const n = parseInt(capEl.textContent, 10);
+    return Number.isNaN(n) ? state.dailyCap || 0 : n;
+  }
+
+  function updateSalePreview() {
+    if (!salePreviewPoints || !saleProductSelect || !qtyInput) return;
+    const productId = saleProductSelect.value;
+    const quantity = Math.max(1, parseInt(qtyInput.value || "1", 10));
+    const perUnit = (state.productPoints && state.productPoints[productId]) || 0;
+    const points = perUnit * quantity;
+
+    salePreviewPoints.textContent = `+${points} pt${points === 1 ? "" : "s"}`;
+
+    if (state.progress && state.progress.is_maxed) {
+      salePreviewNote.textContent = "You're already at the top tier — nice going.";
+    } else if (state.progress && state.progress.nextTierName) {
+      const remaining = state.progress.pointsToNext - points;
+      if (remaining <= 0) {
+        salePreviewNote.textContent = `once approved, this is enough to reach ${state.progress.nextTierEmoji || ""} ${state.progress.nextTierName} 🎉`.trim();
+      } else {
+        salePreviewNote.textContent = `once approved, ${remaining} pt${remaining === 1 ? "" : "s"} short of ${state.progress.nextTierEmoji || ""} ${state.progress.nextTierName}`.trim();
+      }
+    } else {
+      salePreviewNote.textContent = "once approved";
+    }
+
+    if (capWarning) {
+      const remainingToday = currentDailyRemaining();
+      if (quantity > remainingToday) {
+        capWarning.textContent = remainingToday > 0
+          ? `Only ${remainingToday} unit${remainingToday === 1 ? "" : "s"} left in today's logging cap — lower the quantity or it'll be rejected.`
+          : "Today's logging cap is used up — try again tomorrow.";
+        capWarning.hidden = false;
+        if (logSaleSubmit) logSaleSubmit.disabled = true;
+      } else {
+        capWarning.hidden = true;
+        if (logSaleSubmit) logSaleSubmit.disabled = false;
+      }
+    }
+  }
+
+  if (saleProductSelect) saleProductSelect.addEventListener("change", updateSalePreview);
+  if (qtyInput) qtyInput.addEventListener("input", updateSalePreview);
+  if (qtyMinus) qtyMinus.addEventListener("click", updateSalePreview);
+  if (qtyPlus) qtyPlus.addEventListener("click", updateSalePreview);
+  if (openBtn) openBtn.addEventListener("click", updateSalePreview);
+  updateSalePreview();
 
   // ---------- toast (queued — a level-up + several badge unlocks can all
   // fire off one action, and they should show one at a time, not stomp
@@ -448,6 +597,54 @@
         processToastQueue();
       }, 300); // matches the CSS fade-out transition
     }, 2400);
+  }
+
+  // ---------- cancel a pending submission ----------
+  // The "recent submissions" list is re-rendered wholesale (new HTML swapped
+  // in) after every log/cancel action, so its Cancel buttons don't exist yet
+  // when this script first runs — the click listener has to live on the
+  // stable container (#recent-sales-list) and delegate down to whichever
+  // button is actually on screen at click time.
+
+  const recentSalesList = el("recent-sales-list");
+  if (recentSalesList) {
+    recentSalesList.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".recent-sale-cancel");
+      if (!btn) return;
+      const saleId = btn.dataset.saleId;
+      if (!saleId) return;
+
+      btn.disabled = true;
+      btn.textContent = "Canceling…";
+
+      try {
+        const res = await fetch(`/api/cancel-sale/${saleId}/`, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrftoken },
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          showToast(data.error || "Couldn't cancel that submission.");
+          btn.disabled = false;
+          btn.textContent = "Cancel";
+          return;
+        }
+
+        const capEl = el("daily-cap-remaining");
+        if (capEl) capEl.textContent = data.daily_remaining;
+
+        if (data.recent_sales_html) {
+          recentSalesList.innerHTML = data.recent_sales_html;
+        }
+        showToast("Submission canceled.");
+        updateSalePreview();
+      } catch (err) {
+        showToast("Network error — try again.");
+        btn.disabled = false;
+        btn.textContent = "Cancel";
+      }
+    });
   }
 
   // ---------- level-up sound (synthesized — no audio file, no network) ----------
@@ -745,6 +942,8 @@
           const firstRow = recentList.querySelector(".recent-sale-row");
           if (firstRow) firstRow.classList.add("pop");
         }
+
+        updateSalePreview();
 
         setTimeout(() => {
           msg.textContent = "";

@@ -4,19 +4,20 @@
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // ---------- role tabs (Agent / Incentive Analyst / Director) ----------
-  // Purely presentational: the actual role a login lands on is decided
-  // server-side from the account itself (see agent_portal/roles.py) — these
-  // tabs just make it obvious at a glance which portal you're headed for
-  // and swap the headline/demo-credentials copy to match. Selecting
-  // "Director" and then logging in with an Agent account still lands you
-  // on the Agent dashboard; nothing client-side can fake its way past that,
-  // which is the point — the tabs are a convenience, not a permission.
+  // The tab picked here is a real assertion of which account type you're
+  // logging in as, not just decoration — its value is kept in the hidden
+  // #selected-role field submitted with the form, and the server (see
+  // views.SpectrumLoginView.form_valid) rejects the login outright if the
+  // credentials entered belong to a different role than whichever tab is
+  // active. This also swaps the headline/demo-credentials copy to match,
+  // same as before.
 
   const tabs = document.querySelectorAll(".role-tab");
   const heading = document.getElementById("auth-heading");
   const subtext = document.getElementById("auth-subtext");
   const demoUser = document.getElementById("auth-demo-user");
   const demoRole = document.getElementById("auth-demo-role");
+  const selectedRoleField = document.getElementById("selected-role");
   const copyBlocks = [document.getElementById("auth-copy"), document.getElementById("auth-copy-demo")].filter(Boolean);
 
   function applyTabCopy(tab) {
@@ -24,6 +25,7 @@
     if (subtext) subtext.textContent = tab.dataset.subtext;
     if (demoUser) demoUser.textContent = tab.dataset.demoUser;
     if (demoRole) demoRole.textContent = tab.dataset.demoRole;
+    if (selectedRoleField) selectedRoleField.value = tab.dataset.role;
   }
 
   tabs.forEach((tab) => {

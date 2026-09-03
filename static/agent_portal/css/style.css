@@ -1487,3 +1487,106 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   pointer-events: none;
   z-index: 100;
 }
+
+/* ---------- log-sale live point-impact preview ---------- */
+
+.sale-preview {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin: -4px 0 14px;
+}
+
+.sale-preview-points {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--accent-strong);
+}
+
+.sale-preview-note {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.cap-warning {
+  background: rgba(240, 90, 90, 0.14);
+  color: #f27272;
+  border: 1px solid rgba(240, 90, 90, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin: -4px 0 14px;
+}
+
+/* ---------- cancel a pending submission ---------- */
+
+.recent-sale-cancel {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .12s ease, color .12s ease;
+}
+
+.recent-sale-cancel:hover:not(:disabled) { border-color: #f27272; color: #f27272; }
+.recent-sale-cancel:disabled { opacity: .6; cursor: default; }
+
+/* ---------- Director in-app approval queue ---------- */
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  transition: opacity .3s ease, transform .3s ease;
+}
+
+.pending-row:last-child { border-bottom: none; }
+
+.pending-row-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pending-row-main { font-size: 14px; font-weight: 500; }
+
+.pending-row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+.review-btn {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+}
+
+.review-btn:active:not(:disabled) { transform: scale(0.96); }
+.review-btn:disabled { opacity: .6; cursor: default; }
+
+.review-approve { background: var(--success-soft); color: var(--success); }
+.review-approve:hover:not(:disabled) { filter: brightness(1.08); }
+
+.review-reject { background: rgba(240, 90, 90, 0.14); color: #f27272; }
+.review-reject:hover:not(:disabled) { filter: brightness(1.08); }
+
+.pending-row.resolved-approve, .pending-row.resolved-reject {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-row { transition: none; }
+}

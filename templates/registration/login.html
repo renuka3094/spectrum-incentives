@@ -31,12 +31,20 @@
 
   <div class="auth-card">
     <div class="auth-copy" id="auth-copy">
-      <h1 id="auth-heading">Welcome back</h1>
-      <p class="muted" id="auth-subtext">Log in to see this month's incentives and your goal progress.</p>
+      {% if selected_role == 'analyst' %}
+        <h1 id="auth-heading">Welcome back, Analyst</h1>
+        <p class="muted" id="auth-subtext">Log in to see how the current incentive program is performing.</p>
+      {% elif selected_role == 'director' %}
+        <h1 id="auth-heading">Welcome back, Director</h1>
+        <p class="muted" id="auth-subtext">Log in to review pending sales and see how the team's tracking.</p>
+      {% else %}
+        <h1 id="auth-heading">Welcome back</h1>
+        <p class="muted" id="auth-subtext">Log in to see this month's incentives and your goal progress.</p>
+      {% endif %}
     </div>
 
-    {% if form.errors %}
-      <div class="banner banner-error">Your username or password wasn't right — give it another shot.</div>
+    {% if form.non_field_errors %}
+      <div class="banner banner-error" role="alert">{{ form.non_field_errors.0 }}</div>
     {% endif %}
 
     <form method="post" class="stack-form" id="login-form">
@@ -58,13 +66,16 @@
         <span class="caps-lock-warning" id="caps-lock-warning" hidden>⚠ Caps Lock is on</span>
       </label>
       <input type="hidden" name="next" value="{{ next }}">
+      <input type="hidden" name="selected_role" id="selected-role" value="{{ selected_role }}">
       <button class="btn btn-accent btn-block" type="submit">Log in</button>
     </form>
 
     <div class="role-switch">
       <p class="role-switch-label">Logging in as something else?</p>
       <div class="role-tabs" role="tablist">
-        <button type="button" class="role-tab active" role="tab" aria-selected="true"
+        <button type="button" class="role-tab {% if selected_role == 'agent' %}active{% endif %}" role="tab"
+                aria-selected="{% if selected_role == 'agent' %}true{% else %}false{% endif %}"
+                data-role="agent"
                 data-heading="Welcome back"
                 data-subtext="Log in to see this month's incentives and your goal progress."
                 data-demo-user="agent1" data-demo-role="Agent">
@@ -72,7 +83,9 @@
           <span class="role-tab-icon" aria-hidden="true">🚀</span>
           <span class="role-tab-label">Agent</span>
         </button>
-        <button type="button" class="role-tab" role="tab" aria-selected="false"
+        <button type="button" class="role-tab {% if selected_role == 'analyst' %}active{% endif %}" role="tab"
+                aria-selected="{% if selected_role == 'analyst' %}true{% else %}false{% endif %}"
+                data-role="analyst"
                 data-heading="Welcome back, Analyst"
                 data-subtext="Log in to see how the current incentive program is performing."
                 data-demo-user="analyst1" data-demo-role="Analyst">
@@ -80,7 +93,9 @@
           <span class="role-tab-icon" aria-hidden="true">📊</span>
           <span class="role-tab-label">Analyst</span>
         </button>
-        <button type="button" class="role-tab" role="tab" aria-selected="false"
+        <button type="button" class="role-tab {% if selected_role == 'director' %}active{% endif %}" role="tab"
+                aria-selected="{% if selected_role == 'director' %}true{% else %}false{% endif %}"
+                data-role="director"
                 data-heading="Welcome back, Director"
                 data-subtext="Log in to review pending sales and see how the team's tracking."
                 data-demo-user="director1" data-demo-role="Director">
@@ -91,7 +106,15 @@
       </div>
     </div>
 
-    <p class="muted small" id="auth-copy-demo">Demo login — <span id="auth-demo-role">Agent</span>: <code id="auth-demo-user">agent1</code> / <code>spectrum123</code></p>
+    <p class="muted small" id="auth-copy-demo">Demo login —
+      {% if selected_role == 'analyst' %}
+        <span id="auth-demo-role">Analyst</span>: <code id="auth-demo-user">analyst1</code>
+      {% elif selected_role == 'director' %}
+        <span id="auth-demo-role">Director</span>: <code id="auth-demo-user">director1</code>
+      {% else %}
+        <span id="auth-demo-role">Agent</span>: <code id="auth-demo-user">agent1</code>
+      {% endif %}
+      / <code>spectrum123</code></p>
   </div>
 
   {% if teaser %}

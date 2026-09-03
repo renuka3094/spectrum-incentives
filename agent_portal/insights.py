@@ -15,7 +15,7 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from .models import (
-    Incentive, IncentiveTierRule, IncentiveProductGoal, Sale, Tier, AgentAchievement, AgentProfile,
+    Incentive, IncentiveTierRule, IncentiveProductGoal, Product, Sale, Tier, AgentAchievement, AgentProfile,
     AgentTaskCompletion, AgentGoalBonus,
 )
 
@@ -124,6 +124,27 @@ def product_goal_progress(agent, incentive):
         )
     rows.sort(key=lambda r: (r["complete"], -r["pct"]))
     return rows
+
+
+def product_points_map(incentive):
+    """product_id -> points-per-unit for every active product, honoring a
+    per-incentive points_override where one exists (see
+    IncentiveProductGoal.points_per_unit) and falling back to the product's
+    own base_points otherwise. Powers the Log a Sale modal's live
+    point-impact preview client-side — computed once here, server-side, so
+    the 'how many points is this worth' rule lives in exactly one place
+    rather than being re-implemented in JS."""
+    overrides = {}
+    if incentive:
+        overrides = dict(
+            IncentiveProductGoal.objects.filter(incentive=incentive).values_list(
+                "product_id", "points_override"
+            )
+        )
+    return {
+        p.id: overrides.get(p.id) or p.base_points
+        for p in Product.objects.filter(is_active=True)
+    }
 
 
 def nearby_trending(agent, incentive, limit=3):
@@ -937,20 +958,23 @@ def analyst_overview():
 
 
 def director_overview():
-    """Read-only snapshot for the Director portal. The pending-approval list
-    is the one genuinely actionable piece here — approving still happens in
-    the Sale admin's bulk actions (see admin.py), this just means a Director
-    doesn't have to go find /admin/ blind to see what's waiting on them."""
+    """Snapshot for the Director portal. `pending_rows` is the actionable
+    piece — each row carries its own `id`/`points` so the template can wire
+    real Approve/Reject buttons straight to `views.api_review_sale`, no trip
+    to the Django admin required (that's still available as a fallback for
+    anything past the top 8 shown here)."""
     incentive = get_active_incentive()
 
     pending_qs = Sale.objects.filter(status=Sale.STATUS_PENDING).select_related("agent__user", "product")
     pending_count = pending_qs.count()
     pending_rows = [
         {
+            "id": s.id,
             "agent": s.agent.display_name,
             "avatar": s.agent.avatar_emoji,
             "product": s.product.name,
             "quantity": s.quantity,
+            "points": s.points_earned,
             "sold_at": s.sold_at,
         }
         for s in pending_qs.order_by("-sold_at")[:8]

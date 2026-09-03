@@ -1,0 +1,14 @@
+{% for s in pending_rows %}
+<div class="pending-row" data-sale-id="{{ s.id }}">
+  <div class="pending-row-info">
+    <span class="pending-row-main">{{ s.avatar }} {{ s.agent }} — {{ s.quantity }}x {{ s.product }}</span>
+    <span class="muted small">{{ s.points }} pts · {{ s.sold_at|date:"M j, g:ia" }}</span>
+  </div>
+  <div class="pending-row-actions">
+    <button type="button" class="review-btn review-approve" data-sale-id="{{ s.id }}" data-action="approve">Approve</button>
+    <button type="button" class="review-btn review-reject" data-sale-id="{{ s.id }}" data-action="reject">Reject</button>
+  </div>
+</div>
+{% empty %}
+<p class="muted">Nothing waiting on you right now.</p>
+{% endfor %}
