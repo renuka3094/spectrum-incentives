@@ -4,11 +4,12 @@
    a single accent used for actions/progress, and a couple of
    *semantic* states (success, warning) used sparingly.
 
-   The accent is "Spectrum blue" — Charter/Spectrum's real brand is
-   blue + gray (their published guidelines aren't public; this hex
-   is a close approximation from third-party brand-color trackers,
-   not an official asset). Swap it for the exact brand hex if you
-   get access to Charter's internal style guide.
+   The accent is "Spectrum blue" — matched to the same bright blue
+   used on the public landing page (static/agent_portal/css/landing.css'
+   --blue: #0a5cff), which was itself picked to match Spectrum/Charter's
+   real public-facing brand blue from a reference screenshot. Not an
+   official brand asset — swap it for the exact brand hex if you get
+   access to Charter's internal style guide.
 --------------------------------------------------------------- */
 
 :root {
@@ -20,9 +21,9 @@
   --text-dim: #9aa5b1;
   --text-faint: #69737f;
 
-  --accent: #0090d8;
-  --accent-soft: rgba(0, 144, 216, 0.16);
-  --accent-strong: #48b6ee;
+  --accent: #2e7cff;
+  --accent-soft: rgba(46, 124, 255, 0.18);
+  --accent-strong: #6fa2ff;
 
   --success: #34d399;
   --success-soft: rgba(52, 211, 153, 0.14);
@@ -48,9 +49,9 @@
   --text-dim: #526070;
   --text-faint: #808d9b;
 
-  --accent: #00629b;
-  --accent-soft: rgba(0, 98, 155, 0.10);
-  --accent-strong: #004a80;
+  --accent: #0a5cff;
+  --accent-soft: rgba(10, 92, 255, 0.10);
+  --accent-strong: #0043cc;
 
   --success: #1f9d73;
   --success-soft: rgba(31, 157, 115, 0.12);

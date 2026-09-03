@@ -77,15 +77,18 @@ spectrum_project/
 │   ├── roles.py              # role lookup (Agent/Analyst/Director), the role_required decorator,
 │   │                         # and post-login redirect-to-own-portal logic
 │   ├── context_processors.py # topbar avatar/role fallback for non-Agent accounts
-│   ├── views.py              # dashboard + analyst/director views + 4 JSON endpoints
+│   ├── views.py              # public landing page + dashboard + analyst/director views + 4 JSON endpoints
 │   ├── urls.py
 │   ├── admin.py               # manage incentives/products/agents via /admin/
 │   └── management/commands/
 │       ├── seed_data.py       # generates demo data (agents + analyst1/director1)
 │       └── ensure_superuser.py  # creates an admin login from env vars, safe to re-run
-├── templates/                # base.html, login, dashboard, analyst/director dashboards + partials
-└── static/agent_portal/      # style.css, dashboard.js, login.js
+├── templates/                # landing, login, base, dashboard, analyst/director dashboards + partials
+└── static/agent_portal/      # style.css/js (app), landing.css/js (public landing page)
 ```
+
+**URL map:** `/` is now the public landing page (no login needed) — see "Public landing page" below.
+The Agent dashboard that used to live at `/` moved to `/dashboard/`; every other URL is unchanged.
 
 ## How the data model maps to the requirements
 
@@ -96,6 +99,30 @@ spectrum_project/
 | "How many products/services need to be sold" | `IncentiveProductGoal.target_quantity` per product, tracked against `Sale` rows |
 | Nearby buying scenarios | `insights.nearby_trending()` groups `Sale` rows by the agent's `Region` |
 | Analyst sets incentives / Director approves | Real logins exist for both roles (see "Three login types" below); the actual incentive-editing and sale-approval *screens* still route to the Django admin — the models and access control are fully built, the bespoke UI for them is the next round |
+
+---
+
+## Public landing page
+
+The bare domain (`/`) is a public marketing page (`templates/landing.html`, styled by
+`static/agent_portal/css/landing.css` + `landing.js`) — no login required, and no session state
+leaked into it. It's deliberately a different color system from the internal app: a deep navy +
+a bright blue on white, closer to Spectrum/Charter's real public-facing brand colors, rather than
+the near-black internal-app theme used everywhere past the login form.
+
+What it has: a sticky nav with a "Log in" button, a hero with a live stats card pulling real,
+anonymous numbers from `insights.public_teaser()` (sales logged this week, agents who leveled up,
+the hottest-selling product — the same aggregate data the pre-login teaser on the login page has
+always shown), a "what's behind the login" feature grid, and a closing call-to-action banner —
+every "Log in" link/button points at the real login form. The stats card counts up into view and
+the whole page is plain CSS + hand-written vanilla JS (nav shadow-on-scroll, a mobile menu toggle,
+a scroll-triggered count-up, a subtle mouse-tilt on the stats card) — same "no JS framework, no
+charting/animation library" rule as the rest of the project, and everything respects the browser's
+reduced-motion setting.
+
+An already-authenticated session hitting `/` skips the landing page entirely and is sent straight to
+its own portal (`landing_page()` in `views.py` checks `request.user.is_authenticated` first) — the
+marketing pitch is only ever shown to a logged-out visitor.
 
 ---
 
@@ -186,8 +213,10 @@ A Django app needs a real backend host — it can't be a static link. **Render**
    - `DJANGO_SUPERUSER_EMAIL` → optional, can be left blank
 5. Deploy. Render runs the build command (installing dependencies, collecting static files,
    migrating, seeding demo data, and creating the admin login, all in one go), then starts the app.
-6. Share the `https://yourapp.onrender.com` link. Log in with any seeded demo account (see "Three
-   login types" above), or with the admin username/password set in step 4 to reach `/admin/`.
+6. Share the `https://yourapp.onrender.com` link. It now opens on the public landing page (see
+   "Public landing page" above) — click **Log in** there, or go straight to `/login/`, and sign in
+   with any seeded demo account (see "Three login types" above), or with the admin username/password
+   set in step 4 to reach `/admin/`.
 
 **Heads-up:** this ships with SQLite for simplicity. Render's free web services use an ephemeral filesystem, so the database resets on redeploys/restarts — perfectly fine for a demo, but persisting data long-term would mean adding Render's free PostgreSQL instance and pointing `DATABASES` at it. **PythonAnywhere** is a solid alternative to a GitHub-based flow — it allows uploading the folder directly and gives a persistent `yourname.pythonanywhere.com` URL, but its free tier requires more manual WSGI configuration.
 

@@ -18,6 +18,19 @@ def _get_agent_or_none(request):
     return getattr(request.user, "agent_profile", None)
 
 
+def landing_page(request):
+    """The public marketing page at the bare domain root. Anyone already
+    signed in is sent straight past it to their own portal — there's no
+    reason to show a pitch to someone who's already logged in, and a stale
+    bookmark to "/" shouldn't strand them on a page with no "Log in" form.
+    Everyone else gets the pitch, with a "Log in" call to action that goes
+    to the real login page (the dashboard itself now lives at /dashboard/,
+    not "/" — see agent_portal/urls.py)."""
+    if request.user.is_authenticated:
+        return roles.redirect_to_own_portal(request.user)
+    return render(request, "landing.html", {"teaser": insights.public_teaser()})
+
+
 class SpectrumLoginView(LoginView):
     """Same as Django's built-in LoginView, but hands the template a live
     'here's what's happening' teaser so the login screen sells the incentive

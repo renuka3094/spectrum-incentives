@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spectrum Incentives — Field Agent Program</title>
+<meta name="description" content="Track this month's incentive, your tier progress, and where you stand — log in to your Spectrum Incentives dashboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% load static %}
+{% load asset_tags %}
+<link rel="stylesheet" href="{% static_v 'agent_portal/css/landing.css' %}">
+</head>
+<body class="landing-body">
+
+<div class="landing-utility-bar">
+  <div class="landing-container">
+    <span>Built for Spectrum field teams</span>
+  </div>
+</div>
+
+<nav class="landing-nav" id="landing-nav">
+  <div class="landing-container landing-nav-inner">
+    <a class="landing-brand" href="{% url 'landing' %}">
+      Spectrum<span class="landing-brand-arrow">▶</span>
+      <span class="landing-brand-sub">Incentives</span>
+    </a>
+    <ul class="landing-nav-links" id="landing-nav-links">
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#rewards">Rewards</a></li>
+      <li><a href="#for-agents">For agents</a></li>
+    </ul>
+    <div class="landing-nav-actions">
+      <button class="landing-nav-toggle" id="landing-nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+      <a class="landing-btn landing-btn-outline" href="{% url 'login' %}">Log in</a>
+    </div>
+  </div>
+</nav>
+
+<header class="landing-hero">
+  <div class="landing-container landing-hero-grid">
+    <div>
+      <span class="landing-eyebrow">FIELD AGENT INCENTIVE PROGRAM</span>
+      <h1>Track your tier.<br>Earn <span class="accent">real rewards</span>.</h1>
+      <p class="landing-hero-sub">
+        Every approved sale moves you toward Silver, Gold, or Diamond. See this month's
+        incentive, your goal progress, and exactly where you stand — the moment you log in.
+      </p>
+      <div class="landing-hero-actions">
+        <a class="landing-btn landing-btn-solid" href="{% url 'login' %}">Log in to your dashboard</a>
+        <a class="landing-btn landing-btn-ghost-blue" href="#how-it-works">See how it works</a>
+      </div>
+      <p class="landing-hero-note">Already have a login? Use the account your manager set you up with.</p>
+    </div>
+
+    <div class="landing-preview-wrap" id="landing-preview-wrap">
+      <div class="landing-preview" id="landing-preview">
+        {% if teaser %}
+        <div class="landing-preview-top">
+          <span class="landing-live-dot">Live</span>
+          <span class="landing-preview-incentive">{{ teaser.incentive_name }}</span>
+        </div>
+        <div class="landing-preview-stats">
+          <div class="landing-stat-row">
+            <span class="landing-stat-label">Sales logged this week</span>
+            <span class="landing-stat-value" data-count-to="{{ teaser.sales_this_week }}">0</span>
+          </div>
+          {% if teaser.leveled_up_count %}
+          <div class="landing-stat-row">
+            <span class="landing-stat-label">Agents who leveled up this month</span>
+            <span class="landing-stat-value" data-count-to="{{ teaser.leveled_up_count }}">0</span>
+          </div>
+          {% endif %}
+          {% if teaser.hot_product %}
+          <div class="landing-stat-row">
+            <span class="landing-stat-label">Hottest seller right now</span>
+            <span class="landing-stat-value" style="font-size: 16px;">{{ teaser.hot_product }}</span>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="landing-preview-top">
+          <span class="landing-live-dot">Live</span>
+        </div>
+        <p class="landing-preview-fallback">
+          Tier rings, goal tracking, AI insights, and a full rewards catalog — all waiting
+          behind your login.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="landing-section" id="how-it-works">
+  <div class="landing-container">
+    <div class="landing-section-head">
+      <h2>What's behind the login</h2>
+      <p>One dashboard, built around this month's incentive — not a static PDF flyer.</p>
+    </div>
+    <div class="landing-features">
+      <div class="landing-feature-card">
+        <div class="landing-feature-icon">🎯</div>
+        <h3>Tier progress</h3>
+        <p>Climb from Silver to Gold to Diamond as approved sales come in, tracked in a ring that fills as you go.</p>
+      </div>
+      <div class="landing-feature-card">
+        <div class="landing-feature-icon">🤖</div>
+        <h3>AI insights</h3>
+        <p>A plain-language read on what's trending nearby, and the fastest product to close your next tier gap.</p>
+      </div>
+      <div class="landing-feature-card" id="rewards">
+        <div class="landing-feature-icon">🏆</div>
+        <h3>Achievements &amp; rewards</h3>
+        <p>Unlock badges and bonus quests, and see a real rewards catalog — exactly what each tier gets you.</p>
+      </div>
+      <div class="landing-feature-card" id="for-agents">
+        <div class="landing-feature-icon">📊</div>
+        <h3>Leaderboards</h3>
+        <p>See where you stand against your region or the whole company, updated live.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="landing-section landing-section-alt">
+  <div class="landing-container">
+    <div class="landing-cta">
+      <h2>Ready to see where you stand?</h2>
+      <p>Log in with the account your manager set up for you.</p>
+      <a class="landing-btn landing-btn-solid" href="{% url 'login' %}">Log in</a>
+    </div>
+  </div>
+</section>
+
+<footer class="landing-footer">
+  <div class="landing-container landing-footer-inner">
+    <span class="landing-footer-brand">Spectrum<span class="landing-brand-arrow">▶</span> Incentives</span>
+    <span>An internal tool for Spectrum field agents.</span>
+    <a href="{% url 'login' %}">Log in</a>
+  </div>
+</footer>
+
+<script src="{% static_v 'agent_portal/js/landing.js' %}"></script>
+</body>
+</html>
