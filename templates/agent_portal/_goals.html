@@ -4,11 +4,25 @@
     <span class="goal-name">{{ g.product.name }}</span>
     <span class="goal-count"><span class="goal-sold">{{ g.sold }}</span>/{{ g.target }}</span>
   </div>
-  <div class="progress-track">
-    <div class="progress-fill" style="width: {{ g.pct }}%"></div>
+
+  <div class="spectrum-meter {% if g.complete %}live{% endif %}" aria-hidden="true">
+    <div class="spectrum-bars">
+      {% for bar in g.spectrum_bars %}
+        <span class="spectrum-bar {% if bar.lit %}lit{% endif %}" style="--h: {{ bar.height }}%; --i: {{ forloop.counter0 }}"></span>
+      {% endfor %}
+    </div>
+    <span class="spectrum-antenna">
+      <span class="antenna-dot"></span>
+      {% if g.complete %}
+        <span class="antenna-wave w1"></span>
+        <span class="antenna-wave w2"></span>
+        <span class="antenna-wave w3"></span>
+      {% endif %}
+    </span>
   </div>
+
   {% if g.complete %}
-    <span class="pill pill-success">Goal hit ✓</span>
+    <span class="pill pill-success">📡 On air — goal hit ✓</span>
   {% else %}
     <span class="muted small">{{ g.remaining }} more to hit target · {{ g.points_per_unit }} pts each</span>
   {% endif %}

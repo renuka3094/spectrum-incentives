@@ -825,6 +825,122 @@ a { color: inherit; text-decoration: none; }
 
 .goal-item.complete .progress-fill { background: var(--success); }
 
+/* ---------- signal spectrum (per-goal EQ-meter visual) ----------
+   Replaces the plain bar for the Goals tab specifically: one bar per unit
+   of the target (capped — see GOAL_SPECTRUM_MAX_BARS in insights.py),
+   shaped like a broadcast spectrum analyzer since this is literally
+   "Spectrum" Incentives. Bar height is purely decorative rhythm; color
+   (.lit) is the real sold-vs-target data. .goal-item still shows the
+   plain .goal-count number alongside it, so the meter never has to be the
+   only source of truth. */
+
+.spectrum-meter { display: flex; align-items: flex-end; gap: 10px; height: 46px; margin-bottom: 10px; }
+
+.spectrum-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 1px;
+}
+
+.spectrum-bar {
+  display: block;
+  width: 6px;
+  min-width: 4px;
+  flex-shrink: 0;
+  height: var(--h, 50%);
+  background: var(--border);
+  border-radius: 2px 2px 0 0;
+  transition: background .3s ease, box-shadow .3s ease;
+  transform-origin: bottom;
+  animation: spectrum-bar-in .45s cubic-bezier(.4,0,.2,1) both;
+  animation-delay: calc(var(--i, 0) * 0.025s);
+}
+
+@keyframes spectrum-bar-in {
+  from { transform: scaleY(0); opacity: .3; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.spectrum-bar.lit { background: linear-gradient(180deg, var(--accent-strong), var(--accent)); }
+.goal-item.complete .spectrum-bar.lit { background: var(--success); }
+
+.spectrum-meter.live .spectrum-bar.lit {
+  transform-origin: bottom;
+  animation: spectrum-pulse 1.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.06s);
+  box-shadow: 0 0 8px var(--success-soft);
+}
+
+@keyframes spectrum-pulse {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.15); }
+}
+
+.spectrum-antenna {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.antenna-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+
+.spectrum-meter.live .antenna-dot {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+  animation: antenna-flash 1.2s ease-in-out infinite;
+}
+
+@keyframes antenna-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+
+.antenna-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--success);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: antenna-ping 2.4s ease-out infinite;
+}
+
+.antenna-wave.w2 { animation-delay: .5s; }
+.antenna-wave.w3 { animation-delay: 1s; }
+
+@keyframes antenna-ping {
+  0% { width: 8px; height: 8px; opacity: .7; }
+  100% { width: 34px; height: 34px; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spectrum-bar,
+  .spectrum-meter.live .spectrum-bar.lit,
+  .spectrum-meter.live .antenna-dot,
+  .antenna-wave { animation: none; }
+  .spectrum-bar { opacity: 1; transform: none; }
+  .antenna-wave { display: none; }
+}
+
 /* ---------- incentive comparison (Analyst/Director) ----------
    Reuses .goal-item/.progress-track/.progress-fill rather than a new table
    component — same "ranked rows with a bar" shape as goals, just ranked by

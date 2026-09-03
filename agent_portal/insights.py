@@ -94,6 +94,39 @@ def tier_progress(agent, incentive):
     }
 
 
+# "Signal Spectrum" goal visual — one bar per unit of the target, styled like
+# a broadcast spectrum analyzer/EQ meter rather than the pool-ball-and-pocket
+# board a teammate built elsewhere: bars light up left-to-right as approved
+# sales count toward the goal, and the whole meter "goes live" on completion.
+# On-brand for an app literally called Spectrum, and — like Clean Streak —
+# entirely deterministic: bar *heights* are cosmetic (an EQ shape shouldn't
+# be a flat staircase), drawn from a fixed repeating cycle rather than
+# random.random(), so the same goal always renders identically. Bar *lit
+# state* is the real data: purely sold vs. target, nothing decorative there.
+GOAL_SPECTRUM_BAR_HEIGHT_CYCLE = [46, 72, 58, 88, 40, 65, 82, 52, 96, 60, 74, 44]
+
+# Cap how many individual bars we render — a target of 3-6 (typical seed
+# data) draws as a handful of fat EQ bars; a hypothetical target in the
+# hundreds still draws as a readable ~30-bar meter instead of hundreds of
+# hairline slivers, with each bar then representing a slice of the target
+# rather than exactly one unit.
+GOAL_SPECTRUM_MAX_BARS = 30
+
+
+def _goal_spectrum_bars(sold, target):
+    """Returns a list of {'lit': bool, 'height': int-pct} dicts describing the
+    spectrum meter for one goal — see GOAL_SPECTRUM_BAR_HEIGHT_CYCLE above."""
+    if not target:
+        return []
+    bar_count = min(target, GOAL_SPECTRUM_MAX_BARS)
+    lit_count = min(bar_count, round((min(sold, target) / target) * bar_count))
+    cycle = GOAL_SPECTRUM_BAR_HEIGHT_CYCLE
+    return [
+        {"lit": i < lit_count, "height": cycle[i % len(cycle)]}
+        for i in range(bar_count)
+    ]
+
+
 def product_goal_progress(agent, incentive):
     """Per-product sell-through: target vs. what this agent has actually sold."""
     if not incentive:
@@ -120,6 +153,7 @@ def product_goal_progress(agent, incentive):
                 "pct": pct,
                 "points_per_unit": goal.points_per_unit,
                 "complete": sold >= goal.target_quantity,
+                "spectrum_bars": _goal_spectrum_bars(sold, goal.target_quantity),
             }
         )
     rows.sort(key=lambda r: (r["complete"], -r["pct"]))
