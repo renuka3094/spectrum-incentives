@@ -7,6 +7,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from . import insights
@@ -125,6 +126,20 @@ def dashboard(request):
     new_achievements = insights.sync_achievements(agent)
     new_tasks = insights.sync_bonus_tasks(agent, incentive)
     new_mystery_boxes = insights.sync_goal_bonuses(agent, incentive)
+    new_weekly_challenges = insights.sync_weekly_challenges(agent)
+    # Clean Streak milestones are earned off approval/rejection outcomes
+    # (see insights.sync_clean_streak) rather than anything the agent
+    # clicks, so — same as the other sync_* calls — this has to run here,
+    # before build_dashboard_context(), so a milestone crossed by a review
+    # that landed while the agent was away shows up (points included) on
+    # this exact page load.
+    new_clean_streaks = insights.sync_clean_streak(agent)
+    # Must also run before build_dashboard_context() for the same reason as
+    # the sync_* calls above — level_progress() (which this reads) is scored
+    # off lifetime_points(), so a level crossed by anything synced this exact
+    # request needs to already be reflected in agent.last_seen_level before
+    # the context (and its "level" entry) gets built.
+    level_up = insights.sync_level_up(agent)
 
     context = insights.build_dashboard_context(agent)
     context["agent"] = agent
@@ -179,6 +194,11 @@ def dashboard(request):
         [{"key": t["key"], "name": t["name"], "emoji": t["emoji"], "points": t["points"]} for t in new_tasks]
     )
     context["new_mystery_boxes_json"] = json.dumps(new_mystery_boxes)
+    context["new_weekly_challenges_json"] = json.dumps(
+        [{"key": c["key"], "name": c["name"], "emoji": c["emoji"], "points": c["points"]} for c in new_weekly_challenges]
+    )
+    context["level_up_json"] = json.dumps(level_up)
+    context["new_clean_streaks_json"] = json.dumps(new_clean_streaks)
     return render(request, "agent_portal/dashboard.html", context)
 
 
@@ -319,7 +339,8 @@ def api_review_sale(request, sale_id):
         )
 
     sale.status = Sale.STATUS_APPROVED if action == "approve" else Sale.STATUS_REJECTED
-    sale.save(update_fields=["status"])
+    sale.reviewed_at = timezone.now()
+    sale.save(update_fields=["status", "reviewed_at"])
 
     overview = insights.director_overview()
     return JsonResponse(
@@ -396,14 +417,43 @@ def analyst_dashboard(request):
     insights.analyst_overview() and the module docstring above it for what
     'minimal' means here. A Director can see this too, since a Director
     account is also allowed to answer 'is the program healthy right now'
-    without needing a separate Analyst login."""
-    return render(request, "agent_portal/analyst_dashboard.html", {"overview": insights.analyst_overview()})
+    without needing a separate Analyst login.
+
+    incentive_comparison_rows() is what actually answers 'which incentive
+    is more effective' — the ask behind this page's comparison table."""
+    return render(
+        request,
+        "agent_portal/analyst_dashboard.html",
+        {
+            "overview": insights.analyst_overview(),
+            "comparison_rows": insights.incentive_comparison_rows(),
+            "cash_per_point": insights.CASH_PER_POINT,
+        },
+    )
 
 
 @roles.role_required(roles.ROLE_DIRECTOR)
 def director_dashboard(request):
-    """Minimal, real Director landing page — see insights.director_overview()."""
-    return render(request, "agent_portal/director_dashboard.html", {"overview": insights.director_overview()})
+    """Minimal, real Director landing page — see insights.director_overview().
+    Also carries the same incentive comparison table Analysts see (a
+    Director cares about program health too), plus two Director-specific
+    reads: how fast reviews are actually happening (review_turnaround_stats,
+    only meaningful for the people doing the reviewing) and which agents
+    currently have the longest live Clean Streaks (top_clean_streaks) —
+    visibility into approval momentum, tied straight to the review queue
+    above it on this same page."""
+    overview = insights.director_overview()
+    return render(
+        request,
+        "agent_portal/director_dashboard.html",
+        {
+            "overview": overview,
+            "comparison_rows": insights.incentive_comparison_rows(),
+            "cash_per_point": insights.CASH_PER_POINT,
+            "turnaround": insights.review_turnaround_stats(overview["incentive"]),
+            "top_streaks": insights.top_clean_streaks(),
+        },
+    )
 
 
 @login_required

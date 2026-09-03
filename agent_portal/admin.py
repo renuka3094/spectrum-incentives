@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils import timezone
+
 from . import models
 
 
@@ -66,6 +68,12 @@ class AgentGoalBonusAdmin(admin.ModelAdmin):
     list_filter = ("incentive", "product")
 
 
+@admin.register(models.AgentCleanStreakAward)
+class AgentCleanStreakAwardAdmin(admin.ModelAdmin):
+    list_display = ("agent", "streak_length", "points_awarded", "awarded_at")
+    list_filter = ("streak_length",)
+
+
 @admin.register(models.Sale)
 class SaleAdmin(admin.ModelAdmin):
     """This is where self-logged sales actually get verified — a sale an
@@ -81,10 +89,10 @@ class SaleAdmin(admin.ModelAdmin):
 
     @admin.action(description="Approve selected sales (counts them toward points/tiers/goals)")
     def approve_sales(self, request, queryset):
-        updated = queryset.update(status=models.Sale.STATUS_APPROVED)
+        updated = queryset.update(status=models.Sale.STATUS_APPROVED, reviewed_at=timezone.now())
         self.message_user(request, f"Approved {updated} sale(s).")
 
     @admin.action(description="Reject selected sales (they'll never count)")
     def reject_sales(self, request, queryset):
-        updated = queryset.update(status=models.Sale.STATUS_REJECTED)
+        updated = queryset.update(status=models.Sale.STATUS_REJECTED, reviewed_at=timezone.now())
         self.message_user(request, f"Rejected {updated} sale(s).")

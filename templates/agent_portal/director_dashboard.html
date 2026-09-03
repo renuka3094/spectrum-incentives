@@ -41,6 +41,22 @@
         <span class="stat-chip-label">awaiting your review</span>
       </div>
     </div>
+    {% if turnaround %}
+      <div class="stat-chip" title="Average time between an agent logging a sale and it being reviewed">
+        <span class="stat-chip-icon">⚡</span>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value">{{ turnaround.avg_hours }}h</span>
+          <span class="stat-chip-label">avg. review turnaround</span>
+        </div>
+      </div>
+      <div class="stat-chip" title="Share of reviewed sales that were approved">
+        <span class="stat-chip-icon">✅</span>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value">{{ turnaround.approval_rate_pct }}%</span>
+          <span class="stat-chip-label">approval rate</span>
+        </div>
+      </div>
+    {% endif %}
   </section>
 
   <section class="grid-2">
@@ -68,6 +84,37 @@
         Approving here takes effect immediately — the same
         <code>Sale.status</code> flip the admin's bulk actions perform. The
         Sale admin link above still covers anything beyond the top 8 shown here.
+      </p>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <div class="ai-card-head">
+        <p class="eyebrow">📈 Which incentive actually worked?</p>
+        <span class="muted small">Points per participating agent per day</span>
+      </div>
+      <div id="incentive-comparison-list">
+        {% include "agent_portal/_incentive_comparison.html" %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ai-card-head">
+        <p class="eyebrow">🔥 Top Clean Streaks right now</p>
+        <span class="muted small">Who's got approval momentum</span>
+      </div>
+      {% for row in top_streaks %}
+        <div class="mini-row">
+          <span>{{ row.avatar }} {{ row.name }}</span>
+          <span class="muted small">{{ row.streak }} in a row</span>
+        </div>
+      {% empty %}
+        <p class="muted">No one's on a Clean Streak right now.</p>
+      {% endfor %}
+      <p class="muted small" style="margin-top: 16px;">
+        A streak counts consecutive approved sales, completed tasks, and hit
+        goals — one rejection resets it. Fast, fair reviews keep these alive.
       </p>
     </div>
   </section>

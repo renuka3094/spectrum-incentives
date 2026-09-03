@@ -75,5 +75,15 @@
     </div>
   </section>
 
+  <section class="card">
+    <div class="ai-card-head">
+      <p class="eyebrow">📈 Which incentive actually worked?</p>
+      <span class="muted small">Ranked by points per participating agent per day — not raw totals, which would just favor whichever incentive ran longest or had the most agents on it.</span>
+    </div>
+    <div id="incentive-comparison-list">
+      {% include "agent_portal/_incentive_comparison.html" %}
+    </div>
+  </section>
+
 </div>
 {% endblock %}

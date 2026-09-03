@@ -765,6 +765,93 @@
     }
   }
 
+  // ---------- weekly challenge unlocks ----------
+  // Same shape as unlockTasks (task-card, data-key, pill swap) — the weekly
+  // challenge board deliberately reuses the exact task-card markup/CSS
+  // (see _weekly_challenges.html), so the same DOM-update logic works
+  // unchanged; only the container id and count element differ.
+
+  function unlockWeeklyChallenges(challenges) {
+    const countEl = el("weekly-tab-count");
+
+    challenges.forEach((c) => {
+      const card = document.querySelector(`#weekly-challenge-list .task-card[data-key="${CSS.escape(c.key)}"]`);
+      if (card) {
+        card.classList.add("done", "pop");
+        const pill = card.querySelector(".pill");
+        if (pill) {
+          pill.textContent = `+${c.points} pts ✓`;
+          pill.classList.remove("pill-locked");
+          pill.classList.add("pill-success");
+        }
+      }
+      showToast(`🗓️ Weekly challenge complete: ${c.name} (+${c.points} pts)`);
+    });
+
+    if (countEl) {
+      const match = countEl.textContent.match(/(\d+) of (\d+)/);
+      if (match) {
+        const have = parseInt(match[1], 10) + challenges.length;
+        countEl.textContent = countEl.textContent.replace(/^\d+ of \d+/, `${have} of ${match[2]}`);
+      }
+    }
+  }
+
+  // ---------- level up ----------
+
+  function celebrateLevelUp(level) {
+    if (!level) return;
+    const emojiEl = el("level-badge-emoji");
+    if (emojiEl) {
+      emojiEl.textContent = level.emoji;
+      emojiEl.classList.add("pop");
+    }
+    const numberEl = el("level-number");
+    if (numberEl) numberEl.textContent = level.level;
+    const titleEl = el("level-title");
+    if (titleEl) titleEl.textContent = level.title;
+    const tabBadgeEl = el("level-tab-badge");
+    if (tabBadgeEl) tabBadgeEl.textContent = level.level;
+
+    showToast(`⬆️ Level up! You're now Level ${level.level} — ${level.title}`);
+    launchConfetti();
+    playLevelUpSound();
+  }
+
+  // ---------- Clean Streak ----------
+  // No wheel, no draw step, nothing to animate on click — the streak is
+  // rendered straight from the server (clean_streak.current/progress_pct in
+  // the template), since it's fully determined by real approval/rejection
+  // history rather than anything the agent does in the browser. The only
+  // thing JS does for this mechanic is celebrate milestone(s) newly crossed
+  // since the last page load (state.newCleanStreaks, from
+  // insights.sync_clean_streak), same "newly earned this call" pattern as
+  // achievements/tasks/weekly challenges above.
+
+  function celebrateCleanStreaks(awards) {
+    if (!awards || !awards.length) return;
+
+    awards.forEach((a) => {
+      showToast(`🔥 Clean Streak milestone: ${a.streak_length} in a row! (+${a.points_awarded} pts)`);
+    });
+
+    const feed = el("clean-streak-feed");
+    if (feed) {
+      awards
+        .slice()
+        .reverse()
+        .forEach((a) => {
+          const row = document.createElement("div");
+          row.className = "mini-row pop";
+          row.innerHTML = `<span>🔥 ${a.streak_length}-streak</span><span class="muted small">+${a.points_awarded} pts</span>`;
+          feed.insertBefore(row, feed.firstChild);
+        });
+    }
+
+    launchConfetti();
+    playMysteryChime();
+  }
+
   // ---------- mystery box (surprise bonus when a goal is completed) ----------
 
   const mysteryQueue = [];
@@ -964,11 +1051,20 @@
     const hasAchievements = state.newAchievements && state.newAchievements.length;
     const hasTasks = state.newTasks && state.newTasks.length;
     const hasBoxes = state.newMysteryBoxes && state.newMysteryBoxes.length;
-    if (!hasAchievements && !hasTasks && !hasBoxes) return;
+    const hasWeeklyChallenges = state.newWeeklyChallenges && state.newWeeklyChallenges.length;
+    const hasCleanStreaks = state.newCleanStreaks && state.newCleanStreaks.length;
+    const hasLevelUp = !!state.levelUp;
+    if (!hasAchievements && !hasTasks && !hasBoxes && !hasWeeklyChallenges && !hasCleanStreaks && !hasLevelUp) return;
 
     setTimeout(() => {
+      // Level-up first — it's the "biggest" moment, and celebrateLevelUp's
+      // own confetti/toast shouldn't have to compete with a badge/quest
+      // toast that's already mid-flight.
+      if (hasLevelUp) celebrateLevelUp(state.levelUp);
       if (hasAchievements) unlockAchievements(state.newAchievements);
       if (hasTasks) unlockTasks(state.newTasks);
+      if (hasWeeklyChallenges) unlockWeeklyChallenges(state.newWeeklyChallenges);
+      if (hasCleanStreaks) celebrateCleanStreaks(state.newCleanStreaks);
       if (hasBoxes) state.newMysteryBoxes.forEach(queueMysteryBox);
     }, 1600); // wait out the splash screen (it fades until ~1.4s) so nothing pops behind it
   })();

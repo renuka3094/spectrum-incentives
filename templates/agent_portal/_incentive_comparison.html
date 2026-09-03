@@ -1,0 +1,31 @@
+{% comment %}
+Shared by analyst_dashboard.html and director_dashboard.html. Ranked by
+insights.incentive_comparison_rows()'s effectiveness metric (points per
+participating agent per day) — not raw totals, which would just favor
+whichever incentive ran longest or had the most agents on it. estimated_value
+is explicitly labeled an estimate, not "revenue" — see the insights.py
+comment above incentive_comparison_rows() for why.
+{% endcomment %}
+{% for row in comparison_rows %}
+  <div class="goal-item comparison-row{% if row.is_current %} comparison-row-current{% endif %}">
+    <div class="goal-item-top">
+      <span class="goal-name">
+        #{{ row.rank }} {{ row.incentive.name }}
+        {% if row.is_current %}<span class="pill pill-success">running now</span>{% endif %}
+        {% if row.early_data %}<span class="pill pill-warning" title="Only {{ row.period_days }} day{{ row.period_days|pluralize }} in — early numbers can look inflated, not yet a fair comparison to a full period.">early data</span>{% endif %}
+      </span>
+      <span class="goal-count">{{ row.effectiveness }} pts/agent/day</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width: {{ row.bar_pct }}%;"></div>
+    </div>
+    <div class="comparison-row-stats muted small">
+      <span>{{ row.total_points }} pts total</span>
+      <span>{{ row.participating_agents }} agent{{ row.participating_agents|pluralize }}</span>
+      <span>{{ row.period_days }} day{{ row.period_days|pluralize }}</span>
+      <span title="Estimated at ${{ cash_per_point }}/point — there's no real per-sale dollar figure in this data, so treat this as a rough estimate, not actual revenue.">~${{ row.estimated_value }} est. value</span>
+    </div>
+  </div>
+{% empty %}
+  <p class="muted">No incentive has any approved sales yet to compare.</p>
+{% endfor %}

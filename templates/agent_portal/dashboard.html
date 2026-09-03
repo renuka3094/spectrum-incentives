@@ -42,6 +42,10 @@
 
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+    <button class="tab-btn" data-tab="game-center" role="tab" aria-selected="false">
+      🎮 Game Center
+      <span class="tab-count">Lvl <span id="level-tab-badge">{{ level.level }}</span></span>
+    </button>
     <button class="tab-btn" data-tab="goals" role="tab" aria-selected="false">
       Goals
       {% if goals %}<span class="tab-count">{{ goals|length }}</span>{% endif %}
@@ -159,6 +163,99 @@
       <p class="eyebrow">Your points over time</p>
       <canvas id="history-chart" width="720" height="180"></canvas>
     </section>
+  </div>
+
+  <div class="tab-panel" id="panel-game-center">
+
+    <section class="card level-card">
+      <div class="level-card-head">
+        <div class="level-badge-wrap">
+          <span class="level-badge-emoji" id="level-badge-emoji">{{ level.emoji }}</span>
+          <div>
+            <p class="eyebrow">Level <span id="level-number">{{ level.level }}</span> · <span id="level-title">{{ level.title }}</span></p>
+            <p class="muted small"><span id="level-points">{{ level.points }}</span> lifetime pts</p>
+          </div>
+        </div>
+        <div class="level-next">
+          {% if level.points_to_next > 0 %}
+            <span class="muted small"><strong id="level-points-to-next">{{ level.points_to_next }}</strong> pts to Level {{ level.level|add:1 }}</span>
+          {% else %}
+            <span class="muted small">Maxed out — keep climbing anyway!</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="progress-track level-progress-track">
+        <div class="progress-fill" id="level-progress-fill" style="width: {{ level.pct_to_next }}%;"></div>
+      </div>
+    </section>
+
+    <section class="grid-3 game-center-grid">
+
+      <div class="card streak-card">
+        <div class="ai-card-head">
+          <p class="eyebrow">🔥 Daily streak</p>
+          <span class="muted small">
+            {{ agent.current_login_streak }} day{{ agent.current_login_streak|pluralize }} ·
+            best {{ agent.longest_login_streak }} ·
+            🧊 x<span id="streak-freeze-count">{{ agent.streak_freezes }}</span> freeze{{ agent.streak_freezes|pluralize }}
+          </span>
+        </div>
+        <div class="streak-calendar" id="streak-calendar" role="img" aria-label="Login streak, last 35 days">
+          {% for day in login_calendar %}
+            <span class="streak-dot streak-dot-{{ day.status }}" title="{{ day.date|date:'M j' }}{% if day.status == 'active' %} — logged in{% elif day.status == 'freeze' %} — covered by a streak freeze{% elif day.status == 'missed' %} — missed{% endif %}"></span>
+          {% endfor %}
+        </div>
+        <p class="streak-legend muted small">
+          <span class="streak-dot streak-dot-active streak-legend-dot"></span> logged in
+          <span class="streak-dot streak-dot-freeze streak-legend-dot"></span> freeze used
+          <span class="streak-dot streak-dot-missed streak-legend-dot"></span> missed
+        </p>
+      </div>
+
+      <div class="card clean-streak-card">
+        <div class="ai-card-head">
+          <p class="eyebrow">✅ Clean Streak</p>
+          <span class="muted small">Best ever: {{ clean_streak.longest_ever }}</span>
+        </div>
+        <div class="clean-streak-count">
+          <span class="clean-streak-number" id="clean-streak-number">{{ clean_streak.current }}</span>
+          <span class="muted small">in a row approved</span>
+        </div>
+        {% if clean_streak.next_milestone %}
+          <div class="progress-track">
+            <div class="progress-fill" id="clean-streak-progress-fill" style="width: {{ clean_streak.progress_pct }}%;"></div>
+          </div>
+          <p class="muted small clean-streak-hint">{{ clean_streak.remaining_to_next }} more to hit a {{ clean_streak.next_milestone }}-streak</p>
+        {% else %}
+          <p class="muted small clean-streak-hint">You've cleared every milestone — keep the streak alive!</p>
+        {% endif %}
+        <p class="muted small clean-streak-explainer">
+          No luck involved — every approved sale, completed task, or hit goal extends it. One rejection resets it.
+        </p>
+        {% if clean_streak_feed %}
+          <div id="clean-streak-feed">
+            {% for award in clean_streak_feed %}
+              <div class="mini-row">
+                <span>🔥 {{ award.streak_length }}-streak</span>
+                <span class="muted small">+{{ award.points }} pts</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card weekly-challenge-card">
+        <div class="ai-card-head">
+          <p class="eyebrow">🗓️ Weekly Challenges</p>
+          <span class="muted small" id="weekly-tab-count">{{ weekly_challenges.done_count }} of {{ weekly_challenges.total_count }} done · resets {{ weekly_challenges.resets_at|date:"D, M j" }}</span>
+        </div>
+        <div class="task-list" id="weekly-challenge-list">
+          {% include "agent_portal/_weekly_challenges.html" with challenges=weekly_challenges.challenges %}
+        </div>
+      </div>
+
+    </section>
+
   </div>
 
   <div class="tab-panel" id="panel-goals">
@@ -335,7 +432,10 @@
   "agentAvatar": {{ agent_avatar_json|safe }},
   "newAchievements": {{ new_achievements_json|safe }},
   "newTasks": {{ new_tasks_json|safe }},
-  "newMysteryBoxes": {{ new_mystery_boxes_json|safe }}
+  "newMysteryBoxes": {{ new_mystery_boxes_json|safe }},
+  "newWeeklyChallenges": {{ new_weekly_challenges_json|safe }},
+  "levelUp": {{ level_up_json|safe }},
+  "newCleanStreaks": {{ new_clean_streaks_json|safe }}
 }
 </script>
 <script src="{% static_v 'agent_portal/js/dashboard.js' %}"></script>

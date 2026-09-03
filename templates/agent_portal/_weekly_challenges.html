@@ -1,0 +1,18 @@
+{% for c in challenges %}
+<div class="task-card {% if c.done %}done{% endif %}" data-key="{{ c.key }}">
+  <span class="task-emoji">{{ c.emoji }}</span>
+  <div class="task-body">
+    <span class="task-name">{{ c.name }}</span>
+    <span class="task-desc muted small">{{ c.description }}</span>
+  </div>
+  <div class="task-side">
+    {% if c.done %}
+      <span class="pill pill-success">+{{ c.points }} pts ✓</span>
+    {% else %}
+      <span class="pill pill-locked">+{{ c.points }} pts</span>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<p class="muted">Check back Monday for this week's challenges.</p>
+{% endfor %}

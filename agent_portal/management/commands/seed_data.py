@@ -232,6 +232,12 @@ class Command(BaseCommand):
             director.save()
         director.groups.add(director_group)
 
+    # Roughly how often a seeded, reviewed sale comes back rejected — zero
+    # rejections anywhere in demo data would make the accuracy-rate stat and
+    # the new Clean Streak mechanic (which breaks on a rejection) meaningless
+    # to look at, so this puts a realistic few in.
+    SEED_REJECTION_RATE = 0.08
+
     def _seed_sales(self, agents, products, incentives):
         now = timezone.now()
         today = timezone.localdate()
@@ -248,6 +254,7 @@ class Command(BaseCommand):
 
             for agent in agents:
                 num_sales = random.randint(4, 14)
+                planned = []
                 for _ in range(num_sales):
                     product = random.choice(goal_products)
                     quantity = random.choice([1, 1, 1, 2])
@@ -260,13 +267,36 @@ class Command(BaseCommand):
                     ) + timedelta(hours=random.randint(7, 20))
                     if sold_at > now:
                         sold_at = now
+                    planned.append((sold_at, product, quantity))
+
+                # Newest-first so we can leave this agent's most recent 1-2
+                # sales on the *current* incentive sitting in the review
+                # queue (~60% chance each) — same as before reviewed_at
+                # existed, this keeps the Director's pending queue from ever
+                # going empty in a fresh demo.
+                planned.sort(key=lambda p: p[0], reverse=True)
+                pending_slots = min(2, len(planned)) if is_current else 0
+
+                for i, (sold_at, product, quantity) in enumerate(planned):
+                    if i < pending_slots and random.random() < 0.6:
+                        status = Sale.STATUS_PENDING
+                        reviewed_at = None
+                    else:
+                        rejected = random.random() < self.SEED_REJECTION_RATE
+                        status = Sale.STATUS_REJECTED if rejected else Sale.STATUS_APPROVED
+                        # A director reviewing anywhere from a few minutes to
+                        # two days after the agent logged it — gives
+                        # insights.review_turnaround_stats real spread to show.
+                        reviewed_at = min(sold_at + timedelta(hours=random.uniform(0.25, 48)), now)
+
                     sale = Sale(
                         agent=agent,
                         product=product,
                         incentive=incentive,
                         quantity=quantity,
                         points_earned=0,
-                        status=Sale.STATUS_APPROVED,
+                        status=status,
                         sold_at=sold_at,
+                        reviewed_at=reviewed_at,
                     )
                     sale.save()
