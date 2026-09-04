@@ -1,0 +1,35 @@
+{% if signal_sprint.lanes %}
+<div class="signal-sprint" id="signal-sprint">
+  {% for lane in signal_sprint.lanes %}
+  <div class="sprint-lane{% if lane.complete %} sprint-lane-complete{% endif %}"
+       data-product="{{ lane.product }}"
+       data-sold="{{ lane.sold }}"
+       data-target="{{ lane.target }}"
+       data-remaining="{{ lane.remaining }}"
+       data-points="{{ lane.points_per_unit }}"
+       data-pct="{{ lane.pct }}"
+       data-complete="{{ lane.complete|yesno:'1,0' }}">
+    <div class="sprint-lane-head">
+      <span class="sprint-lane-product">{{ lane.product }}</span>
+      <span class="sprint-lane-pct">{{ lane.pct }}%</span>
+    </div>
+    <div class="sprint-track">
+      <div class="sprint-track-fill" data-pct="{{ lane.pct }}"></div>
+      <div class="sprint-runner" data-pct="{{ lane.pct }}" aria-hidden="true">{% if lane.complete %}🏁{% else %}🏃{% endif %}</div>
+      <div class="sprint-finish" aria-hidden="true">🚩</div>
+    </div>
+    <p class="muted small sprint-lane-detail">
+      {% if lane.complete %}Goal hit — {{ lane.sold }}/{{ lane.target }} sold, no more needed.
+      {% else %}{{ lane.remaining }} more to hit this goal — {{ lane.points_per_unit }} pt{{ lane.points_per_unit|pluralize }} per unit.{% endif %}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+<p class="muted small">{{ signal_sprint.count }} product goal{{ signal_sprint.count|pluralize }} racing to the finish line — each runner's spot is exactly how close you are right now, and it moves the moment a new sale is logged. Click any lane for the points math.</p>
+<p class="muted small" id="signal-sprint-detail">Click a lane above to see exactly what selling more of that product earns you.</p>
+{% else %}
+<div class="signal-sprint signal-sprint-empty" aria-hidden="true">
+  <span>🏁</span>
+</div>
+<p class="muted small">No active product goals to race yet — once this incentive sets targets, each one gets its own lane here.</p>
+{% endif %}

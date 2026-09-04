@@ -1,0 +1,24 @@
+{% if signal_launch.satellites %}
+<div class="signal-launch" id="signal-launch">
+  <div class="launch-tower" aria-hidden="true">📡</div>
+  <div class="orbit-ring" id="orbit-ring">
+    {% for sat in signal_launch.satellites %}
+      <button type="button"
+              class="satellite"
+              style="--oi: {{ forloop.counter0 }}; --ocount: {{ signal_launch.count }};"
+              data-label="{{ sat.label }}"
+              data-kind="{{ sat.kind }}"
+              aria-label="{{ sat.label }}">
+        <span class="satellite-icon" style="--ocount: {{ signal_launch.count }};">{% if sat.kind == 'goal' %}🎯{% elif sat.kind == 'task' %}✅{% else %}🛰️{% endif %}</span>
+      </button>
+    {% endfor %}
+  </div>
+</div>
+<p class="muted small">{{ signal_launch.count }} signal{{ signal_launch.count|pluralize }} in orbit — every approved sale, task, or goal win launches one.</p>
+<p class="muted small" id="signal-launch-detail">Click any satellite to see what launched it.</p>
+{% else %}
+<div class="signal-launch signal-launch-empty" aria-hidden="true">
+  <div class="launch-tower">📡</div>
+</div>
+<p class="muted small">Nothing in orbit yet — your first approved sale, task, or goal hit will launch one.</p>
+{% endif %}

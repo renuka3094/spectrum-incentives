@@ -941,6 +941,121 @@ a { color: inherit; text-decoration: none; }
   .antenna-wave { display: none; }
 }
 
+/* ---------- signal sprint (Game Center, Round 28) ----------
+   Replaces Round 27's Signal River after the user rejected the whole Game
+   Center concept and asked, in their own words, for "run track based on
+   goals or accomplishment... or agent goals." AskUserQuestion pinned the
+   exact shape before any code was written: one lane per active product
+   Goal, a runner whose position IS that goal's real % sold-vs-target —
+   the same numbers already behind the Goals tab's Signal Spectrum bars,
+   not an abstract stream of past events. Every lane is self-labeled with
+   the product name and live percentage directly on the lane (learned from
+   Signal River's addendum: bake the meaning onto the element, no legend,
+   no click needed to understand what you're looking at) plus a permanent
+   one-line caption stating exactly what selling more of that product does
+   ("N more to hit this goal — P pts per unit").
+
+   Two animations run on the same .sprint-runner without conflicting: a
+   one-time "run-in" transition on `left` (0% -> real pct, triggered by
+   dashboard.js shortly after load, the same idea as the app's existing
+   count-up number animations) and a continuous idle jog/bob keyframe on
+   `transform`, which the left-transition never touches — so the runner is
+   never sitting still, directly addressing Tower Build's "no action
+   happening, mostly static" failure mode. A complete lane swaps the
+   runner for a flag and stops the jog rather than faking a slower "still
+   racing" runner. All Signal River marquee/packet/jitter rules are gone
+   entirely, not just renamed. */
+
+.signal-sprint {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 6px 0 10px;
+}
+
+.sprint-lane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: .92rem;
+  margin-bottom: 4px;
+}
+
+.sprint-lane-product { font-weight: 700; }
+
+.sprint-lane-pct {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sprint-track {
+  position: relative;
+  height: 42px;
+  border-radius: 21px;
+  border: 1px solid var(--accent-soft);
+  background: linear-gradient(180deg, var(--accent-soft), transparent 70%);
+  overflow: visible;
+}
+
+.sprint-track-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  border-radius: 21px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  opacity: .45;
+  transition: width 1.4s cubic-bezier(.22, 1, .36, 1);
+}
+
+.sprint-finish {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  z-index: 1;
+}
+
+.sprint-runner {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  z-index: 2;
+  transition: left 1.4s cubic-bezier(.22, 1, .36, 1);
+  animation: sprint-jog .6s ease-in-out infinite;
+}
+
+.sprint-lane-complete .sprint-runner { animation: none; }
+
+@keyframes sprint-jog {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0) rotate(0deg); }
+  50% { transform: translate(-50%, -50%) translateY(-5px) rotate(-8deg); }
+}
+
+.sprint-lane { cursor: pointer; }
+
+.sprint-lane:focus-visible .sprint-track,
+.sprint-lane:hover .sprint-track { border-color: var(--accent); }
+
+.sprint-lane-detail { margin: 6px 0 0; }
+
+.signal-sprint-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  font-size: 30px;
+  opacity: .6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprint-runner { animation: none; transition: none; }
+  .sprint-track-fill { transition: none; }
+}
+
 /* ---------- incentive comparison (Analyst/Director) ----------
    Reuses .goal-item/.progress-track/.progress-fill rather than a new table
    component — same "ranked rows with a bar" shape as goals, just ranked by

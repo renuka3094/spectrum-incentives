@@ -1,0 +1,23 @@
+{% if signal_river.packets %}
+<div class="signal-river" id="signal-river">
+  <div class="river-source" aria-hidden="true">📡</div>
+  {% for pkt in signal_river.packets %}
+    <button type="button"
+            class="river-packet river-packet-{{ pkt.kind }}"
+            style="--idx: {{ forloop.counter0 }}; --count: {{ signal_river.count }};"
+            data-label="{{ pkt.label }}"
+            data-kind="{{ pkt.kind }}"
+            aria-label="{{ pkt.label }}">
+      <span class="river-packet-icon">{% if pkt.kind == 'goal' %}🎯{% elif pkt.kind == 'task' %}✅{% else %}💰{% endif %}</span>
+      <span class="river-packet-label">{% if pkt.kind == 'goal' %}Goal hit{% elif pkt.kind == 'task' %}Task done{% else %}Sale{% endif %}</span>
+    </button>
+  {% endfor %}
+</div>
+<p class="muted small">{{ signal_river.count }} signal{{ signal_river.count|pluralize }} flowing — every approved sale, completed task, or hit goal sends a labeled signal down the river. Click any one for the exact detail.</p>
+<p class="muted small" id="signal-river-detail">Click any signal in the river to see what sent it.</p>
+{% else %}
+<div class="signal-river signal-river-empty" aria-hidden="true">
+  <div class="river-source">📡</div>
+</div>
+<p class="muted small">Nothing flowing yet — your first approved sale, task, or goal hit will send the first signal.</p>
+{% endif %}

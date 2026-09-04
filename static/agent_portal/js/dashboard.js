@@ -122,6 +122,59 @@
     animateNumber(cashEl, target, { duration: 1100, format: (v) => `$${v.toLocaleString()}` });
   }
 
+  // ---------- signal sprint (Round 28) — run-in + lane clicks ----------
+  // Replaces Round 27's Signal River entirely (that marquee/packet DOM no
+  // longer exists). Unlike the river, this mechanic has no "new since last
+  // visit" concept to animate in on arrival — insights.signal_sprint_context()
+  // is a live readout of current goal-progress data, not an event history, so
+  // there's nothing here that plays only once per visit. Instead JS does two
+  // things: (1) a one-time "run-in" on page load, the same idea as this
+  // file's animateNumber() count-ups — every .sprint-track-fill and
+  // .sprint-runner is server-rendered at 0 (see _signal_sprint.html/
+  // style.css), and shortly after load JS sets each one's real width/left
+  // from its data-pct attribute, which fires the CSS `transition: width` /
+  // `transition: left` already defined on those elements so the runner
+  // visibly races from the start line to wherever it really stands; (2) a
+  // click handler event-delegated on #signal-sprint (same pattern as the old
+  // #signal-river handler) that answers "what happens if I sell more of
+  // this" with the concrete remaining-units/points math for that lane. The
+  // continuous idle jog/bob on every non-complete runner (@keyframes
+  // sprint-jog) needs no JS at all — it's a plain infinite CSS animation on
+  // `transform`, which the run-in's `left` transition never touches, so the
+  // two coexist without fighting, same trick Signal River used for its
+  // flow/arrive animations.
+
+  const signalSprint = el("signal-sprint");
+
+  if (signalSprint) {
+    setTimeout(() => {
+      signalSprint.querySelectorAll(".sprint-track-fill").forEach((fill) => {
+        fill.style.width = `${fill.dataset.pct || 0}%`;
+      });
+      signalSprint.querySelectorAll(".sprint-runner").forEach((runner) => {
+        runner.style.left = `${runner.dataset.pct || 0}%`;
+      });
+    }, 250);
+
+    const sprintDetail = el("signal-sprint-detail");
+    if (sprintDetail) {
+      signalSprint.addEventListener("click", (e) => {
+        const lane = e.target.closest(".sprint-lane");
+        if (!lane) return;
+        const product = lane.dataset.product;
+        if (lane.dataset.complete === "1") {
+          sprintDetail.textContent = `🏁 ${product}: complete! ${lane.dataset.sold}/${lane.dataset.target} sold.`;
+          return;
+        }
+        const remaining = parseInt(lane.dataset.remaining, 10) || 0;
+        const perUnit = parseInt(lane.dataset.points, 10) || 0;
+        const pointsLeft = remaining * perUnit;
+        sprintDetail.textContent =
+          `🏃 ${product}: sell ${remaining} more to finish — ${pointsLeft} point${pointsLeft === 1 ? "" : "s"} still up for grabs (${perUnit} pt${perUnit === 1 ? "" : "s"}/unit).`;
+      });
+    }
+  }
+
   // ---------- history bar chart ----------
 
   // The canvas's `width`/`height` attributes (720x180) set its internal

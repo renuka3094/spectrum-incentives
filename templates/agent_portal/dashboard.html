@@ -187,6 +187,7 @@
       <div class="progress-track level-progress-track">
         <div class="progress-fill" id="level-progress-fill" style="width: {{ level.pct_to_next }}%;"></div>
       </div>
+      <p class="muted small level-explainer">Earn XP from every approved sale, completed task, hit goal, and streak milestone — you level up automatically as it adds up, nothing to redeem.</p>
     </section>
 
     <section class="grid-3 game-center-grid">
@@ -210,6 +211,7 @@
           <span class="streak-dot streak-dot-freeze streak-legend-dot"></span> freeze used
           <span class="streak-dot streak-dot-missed streak-legend-dot"></span> missed
         </p>
+        <p class="muted small streak-explainer">Counts consecutive days you log in — not the same as Clean Streak next to it, which tracks approved sales, tasks, and goals instead of just showing up.</p>
       </div>
 
       <div class="card clean-streak-card">
@@ -230,7 +232,7 @@
           <p class="muted small clean-streak-hint">You've cleared every milestone — keep the streak alive!</p>
         {% endif %}
         <p class="muted small clean-streak-explainer">
-          No luck involved — every approved sale, completed task, or hit goal extends it. One rejection resets it.
+          No luck involved — every approved sale, completed task, or hit goal extends it. One rejection resets it. Different from Daily Streak above, which just tracks login days, not sales performance.
         </p>
         {% if clean_streak_feed %}
           <div id="clean-streak-feed">
@@ -252,8 +254,17 @@
         <div class="task-list" id="weekly-challenge-list">
           {% include "agent_portal/_weekly_challenges.html" with challenges=weekly_challenges.challenges %}
         </div>
+        <p class="muted small weekly-explainer">One-time challenges for this week only — finish each before the reset date for its bonus points, or it expires and a fresh set starts next week.</p>
       </div>
 
+    </section>
+
+    <section class="card signal-sprint-card">
+      <div class="ai-card-head">
+        <p class="eyebrow">🏁 Signal Sprint</p>
+        <span class="muted small">One race lane per goal — the runner's spot is exactly how close you are</span>
+      </div>
+      {% include "agent_portal/_signal_sprint.html" %}
     </section>
 
   </div>
@@ -267,6 +278,7 @@
       <div class="goal-list" id="goal-list">
         {% include "agent_portal/_goals.html" %}
       </div>
+      <p class="muted small goals-explainer">Each bar is a product goal — every unit you sell earns its points toward that goal, and hitting every goal in this incentive unlocks a bonus mystery box.</p>
     </section>
   </div>
 
@@ -281,6 +293,7 @@
       <div class="task-list" id="task-list">
         {% include "agent_portal/_tasks.html" %}
       </div>
+      <p class="muted small tasks-explainer">One-time quests for this incentive period — complete each once for its bonus points before the period ends.</p>
     </section>
   </div>
 
@@ -293,6 +306,7 @@
       <div class="badge-grid" id="badge-grid">
         {% include "agent_portal/_achievements.html" %}
       </div>
+      <p class="muted small achievements-explainer">Badges unlock automatically the moment you hit their requirement — nothing to claim, just keep selling and completing tasks.</p>
     </section>
   </div>
 
@@ -305,6 +319,7 @@
       <div class="reward-grid" id="reward-grid">
         {% include "agent_portal/_rewards.html" %}
       </div>
+      <p class="muted small rewards-explainer">Tiers unlock automatically as your lifetime points rise — nothing to redeem, just keep earning.</p>
     </section>
   </div>
 

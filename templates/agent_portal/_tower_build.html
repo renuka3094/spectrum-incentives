@@ -1,0 +1,28 @@
+{% if tower_build.blocks %}
+<div class="tower-build" id="tower-build">
+  <div class="tower-stack" id="tower-stack">
+    {% for block in tower_build.blocks %}
+      <button type="button"
+              class="tower-block tower-block-{{ block.kind }}"
+              data-label="{{ block.label }}"
+              data-kind="{{ block.kind }}"
+              aria-label="{{ block.label }}">
+        <span class="tower-block-icon">{% if block.kind == 'goal' %}🎯{% elif block.kind == 'task' %}✅{% else %}💠{% endif %}</span>
+      </button>
+    {% endfor %}
+  </div>
+  <div class="tower-base" aria-hidden="true"></div>
+</div>
+<p class="muted small">{{ tower_build.count }} block{{ tower_build.count|pluralize }} stacked — every approved sale, task, or goal win adds one.</p>
+<p class="muted small" id="tower-build-detail">Click any block to see what stacked it.</p>
+<div class="tower-legend" aria-hidden="true">
+  <span class="tower-legend-item"><span class="tower-legend-dot tower-block-sale"></span> Sale</span>
+  <span class="tower-legend-item"><span class="tower-legend-dot tower-block-task"></span> Task</span>
+  <span class="tower-legend-item"><span class="tower-legend-dot tower-block-goal"></span> Goal</span>
+</div>
+{% else %}
+<div class="tower-build tower-build-empty" aria-hidden="true">
+  <div class="tower-base"></div>
+</div>
+<p class="muted small">Nothing stacked yet — your first approved sale, task, or goal hit will drop the first block.</p>
+{% endif %}

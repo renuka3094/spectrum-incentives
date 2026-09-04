@@ -403,6 +403,7 @@ def build_dashboard_context(agent):
         "clean_streak_feed": clean_streak_feed(agent),
         "weekly_challenges": weekly_challenges_context(agent),
         "login_calendar": login_streak_calendar(agent),
+        "signal_sprint": signal_sprint_context(goals),
     }
 
 
@@ -1071,6 +1072,63 @@ def clean_streak_feed(agent, limit=6):
         {"streak_length": a.streak_length, "points": a.points_awarded, "awarded_at": a.awarded_at}
         for a in awards
     ]
+
+
+# ---------------------------------------------------------------------------
+# Signal Sprint — Round 28, replacing Round 27's Signal River. The river got
+# past "is it moving" (it was, verifiably) but not "is it clear" — a
+# follow-up pass added text labels to fix a legibility complaint, and then
+# the user asked for a genuinely different concept anyway: "run track based
+# on goals or accomplishment... or agent goals." Rather than build off that
+# phrase alone, AskUserQuestion pinned the exact interpretation before any
+# code was written: one lane per active product Goal, each with a runner
+# whose position IS that goal's real % sold-vs-target — not an abstract
+# stream of past events, but a live picture of the same Goals-tab numbers the
+# agent already sees, made legible as "how close am I."
+#
+# This is a genuinely different shape from every mechanic before it in one
+# important way: Signal Launch/Tower Build/Signal River were all built on
+# _agent_positive_timeline() (history of past wins). Signal Sprint is instead
+# built directly on product_goal_progress() (current standing, the same
+# function that already powers the Goals tab and its Signal Spectrum bars) —
+# there is no event history to walk, no "new since last visit" to compute,
+# and therefore no sync_* function and no AgentProfile bookkeeping at all.
+# Reloading the dashboard after logging a new sale simply reads fresher
+# numbers; the runner is wherever the real data says it is, every time.
+# Goal *completion* already has its own celebration (sync_goal_bonuses's
+# mystery box) — Signal Sprint doesn't duplicate that, it just shows the
+# lane finishing.
+#
+# AgentProfile.last_seen_positive_event_at (added Round 25, carried through
+# Rounds 26–27) has no reader left after this round. Left in place rather
+# than dropped via a migration — a harmless nullable column costs nothing to
+# leave, and the field may be useful again if a future mechanic goes back to
+# an event-history shape.
+# ---------------------------------------------------------------------------
+
+
+def signal_sprint_context(goals):
+    """Read-only race lanes, one per active product goal — takes the same
+    `goals` list build_dashboard_context() already computed via
+    product_goal_progress() (and already sorted — closest-to-finish
+    incomplete goals first, complete goals after) rather than querying it a
+    second time. No cap on lane count: unlike an ever-growing event history,
+    the number of lanes is bounded by how many product goals this incentive
+    actually has, which this app's seed data and real usage both keep
+    small."""
+    lanes = [
+        {
+            "product": g["product"].name,
+            "sold": g["sold"],
+            "target": g["target"],
+            "remaining": g["remaining"],
+            "pct": g["pct"],
+            "points_per_unit": g["points_per_unit"],
+            "complete": g["complete"],
+        }
+        for g in goals
+    ]
+    return {"lanes": lanes, "count": len(lanes)}
 
 
 # ---------------------------------------------------------------------------

@@ -134,6 +134,12 @@ def dashboard(request):
     # that landed while the agent was away shows up (points included) on
     # this exact page load.
     new_clean_streaks = insights.sync_clean_streak(agent)
+    # Note: Round 28's Signal Sprint (replacing Signal River) needed no
+    # sync_* call here at all — unlike every Game Center mechanic before it,
+    # it reads live goal-progress data directly rather than walking an event
+    # history for "what's new since last visit," so there's nothing to
+    # advance before build_dashboard_context() runs. See insights.py's
+    # Signal Sprint section for why.
     # Must also run before build_dashboard_context() for the same reason as
     # the sync_* calls above — level_progress() (which this reads) is scored
     # off lifetime_points(), so a level crossed by anything synced this exact

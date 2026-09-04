@@ -166,6 +166,19 @@ class AgentProfile(models.Model):
     # Center can show "your best run" even mid-way through a fresh streak.
     longest_clean_streak_ever = models.PositiveIntegerField(default=0)
 
+    # DORMANT as of Round 28 — no code reads this field anymore. Added in
+    # Round 25 for Signal Launch, reused unchanged through Round 26's Tower
+    # Build and Round 27's Signal River (three different rejected-and-
+    # replaced visual themes on top of one unchanged "what's new since last
+    # visit" high-water mark), then made obsolete when Round 28's Signal
+    # Sprint dropped the whole "walk an event history" approach in favor of
+    # reading live goal-progress data directly — there is no longer a
+    # concept of "new since last visit" for this mechanic to track. Left in
+    # the schema rather than dropped via a migration, since a harmless
+    # nullable column costs nothing to keep and the field may be worth
+    # reviving if a future mechanic goes back to an event-history shape.
+    last_seen_positive_event_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.user.get_full_name() or self.user.username
 

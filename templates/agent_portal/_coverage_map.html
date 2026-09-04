@@ -1,0 +1,32 @@
+{% if coverage_map.zones %}
+<div class="coverage-stats">
+  <span class="coverage-pct-wrap">
+    <span class="coverage-pct" id="coverage-pct" data-value="{{ coverage_map.overall_pct }}">0</span><span class="coverage-pct-sign">%</span>
+    <span class="muted small">covered</span>
+  </span>
+  <span class="muted small">{{ coverage_map.zones_complete }} of {{ coverage_map.zones_total }} zones fully covered</span>
+</div>
+
+<div class="coverage-map-grid" id="coverage-map-grid">
+  {% for zone in coverage_map.zones %}
+  <div class="coverage-zone {% if zone.complete %}complete{% endif %}"
+       style="--zi: {{ forloop.counter0 }}"
+       data-product="{{ zone.product.name }}"
+       data-sold="{{ zone.sold }}"
+       data-target="{{ zone.target }}"
+       data-points="{{ zone.points_per_unit }}"
+       data-complete="{% if zone.complete %}1{% else %}0{% endif %}">
+    <div class="coverage-hexes">
+      {% for tile in zone.tiles %}
+        <button type="button" class="hex-tile {% if tile.lit %}lit{% endif %}" aria-label="{{ zone.product.name }} coverage tile"></button>
+      {% endfor %}
+    </div>
+    <span class="coverage-zone-label">{{ zone.product.name }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="muted small" id="coverage-detail">Click any tile to see what it covers.</p>
+{% else %}
+<p class="muted">No product goals set for this incentive yet — nothing to map.</p>
+{% endif %}
